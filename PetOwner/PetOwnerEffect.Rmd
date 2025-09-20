@@ -1,0 +1,447 @@
+---
+title: "Pet owners versus no-pet owners"
+output:
+  html_notebook: default
+  pdf_document: default
+---
+**PetOwner**(1:Yes; 0:No) : Do you currently have or share responsibility for a pet/companion animal?
+```{r data checking,warning=FALSE,message=FALSE,comment=F,include=FALSE}
+rm(list = ls())
+setwd('/Users/fangshu/Desktop/research/Analysis_pets_isolation/COVIDandPETS-master/cleaned_data/')
+library(dplyr)
+library(ggplot2)
+library(lme4)
+library(knitr)
+library(kableExtra)
+library(ordinal)
+library(formattable)
+library(gridExtra)
+#library(nnet)
+library(mlogit)
+rawdatalist <- list()
+for (d in 1:4) {
+  rawdatalist[[d]] <- read.csv(paste0("wave",d,"_cleaned_0622.csv"))
+}
+```
+
+
+```{r constract data for modeling}
+# x: pet owner yes or no ('PetOwner')
+# y: Kessler 1 -10, Gad 1-7, Lonely 1-3, Risk 1-3, psychproblem, and genhealth
+# use ordinal logistic regression
+
+# Kessler 1 -10:Generalized Psychological Distress
+# Gad 1-7: Generalized Anxiety Disorder
+# Lonely 1-3: Loneliness Short Form
+# Risk 1-3: COVID Risk Perceptions
+# psychproblem, and genhealth
+
+workerid_four <- intersect(rawdatalist[[1]]$workerId,rawdatalist[[2]]$workerId)
+workerid_four <- intersect(workerid_four,rawdatalist[[3]]$workerId)
+workerid_four <- intersect(workerid_four,rawdatalist[[4]]$workerId)
+alldata <- c()
+for (d in 1:4) {
+  
+  wave <- data.frame(dplyr::select(rawdatalist[[d]],workerId,PetOwner,
+                           Kessler1,Kessler2,Kessler3,Kessler4,Kessler5,
+                           Kessler6,Kessler7,Kessler8,Kessler9,Kessler10,
+                           Gad1,Gad2,Gad3,Gad4,Gad5,Gad6,Gad7,
+                           Lonely1,Lonely2,Lonely3,
+                           Risk1,Risk2,Risk3,
+                           genhealth))
+  timepoint <- paste0("T",d)
+  
+  wave$time <- rep(timepoint,nrow(wave))
+  
+  alldata <- rbind(alldata,wave)
+}
+alldata <- alldata %>%
+  mutate(num=ifelse(workerId %in% workerid_four,"four","once_twice_three")) 
+
+cols <- colnames(alldata)
+alldata[cols] <- lapply(alldata[cols], factor) 
+levels(alldata$PetOwner) <- c("No","Yes")
+```
+
+Data size:
+```{r data size}
+table(alldata$time)
+```
+
+#### genhealth
+```{r genhealth plot}
+sumdata1 <- alldata %>%
+  group_by(time,PetOwner) %>%
+  summarise(count = n())
+
+sumdata2 <- alldata %>%
+  group_by(time,PetOwner,genhealth) %>%
+  summarise(percent = n())
+
+sumdata2 <- merge(sumdata2,sumdata1,by=c("time","PetOwner"))
+sumdata2$percent <- sumdata2$percent/sumdata2$count
+levels(sumdata2$genhealth) <- c("Bad","Not so good",
+                               "So So","Good",
+                               "Excellent")
+
+ggplot(sumdata2, aes(x=PetOwner,y=percent,fill=genhealth))+geom_col(width = 0.5)+facet_wrap(~time)+
+  geom_text(aes(label = scales::percent(percent)),position = position_stack(vjust = .5))+
+  ggtitle("How would you describe your general health lately?")
+```
+
+```{r genhealth model}
+m <- clmm(genhealth ~ PetOwner + time + (1|workerId), data = alldata,nAGQ = 9)
+coef_4 <- summary(m)$coefficients
+coef <- coef_4[(nrow(coef_4)-3):nrow(coef_4),]
+coef
+```
+
+#### Kessler 1 -10
+
+```{r Kessler 1-10 model1, echo=FALSE,warning=FALSE}
+coef <- c()
+for(q in 1:10){
+  formula <- as.formula(paste0("Kessler",q,"~","PetOwner + time + (1|workerId)"))
+  m <- clmm(formula, data = alldata,nAGQ = 9)
+  coef_q <- summary(m)$coefficients
+  coef <- rbind(coef,coef_q[(nrow(coef_q)-3):nrow(coef_q),])
+}
+coef
+```
+
+#### Gad 1-7
+```{r Gad 1-7 model}
+coef <- c()
+for(q in 1:7){
+  formula <- as.formula(paste0("Gad",q,"~","PetOwner + time + (1|workerId)"))
+  m <- clmm(formula, data = alldata,nAGQ = 9)
+  coef_q <- summary(m)$coefficients
+  coef <- rbind(coef,coef_q[(nrow(coef_q)-3):nrow(coef_q),])
+}
+coef
+```
+
+#### Lonely 1-3
+```{r Lonely 1-3 model}
+coef <- c()
+for(q in 1:3){
+  formula <- as.formula(paste0("Lonely",q,"~","PetOwner + time + (1|workerId)"))
+  m <- clmm(formula, data = alldata,nAGQ = 9)
+  coef_q <- summary(m)$coefficients
+  coef <- rbind(coef,coef_q[(nrow(coef_q)-3):nrow(coef_q),])
+}
+coef
+```
+
+#### Risk 1-3
+```{r Risk 1-3 model}
+coef <- c()
+for(q in 1:3){
+  formula <- as.formula(paste0("Risk",q,"~","PetOwner + time + (1|workerId)"))
+  m <- clmm(formula, data = alldata,nAGQ = 9)
+  coef_q <- summary(m)$coefficients
+  coef <- rbind(coef,coef_q[(nrow(coef_q)-3):nrow(coef_q),])
+}
+coef
+```
+
+## Unique questions for WAVE3 and WAVE4
+```{r}
+wave_3_4 <- c()
+for (d in 3:4) {
+  
+  wave <- data.frame(dplyr::select(rawdatalist[[d]],workerId,PetOwner,
+                           Aware,InfoSource,TrustInfo,
+                           SusceptAnimal_1,SusceptAnimal_2,SusceptAnimal_3,SusceptAnimal_4,
+                           SusceptAnimal_5,SusceptAnimal_6,SusceptAnimal_7,
+                           Q92_1,Q92_2,Q92_3,Q92_4,Q92_5,Q92_6,Q92_7,Q92_8,Q92_9,
+                           InfectHumans_1,InfectHumans_2,InfectHumans_3,InfectHumans_4,InfectHumans_5,
+                           HumansInfectAnimal_1,HumansInfectAnimal_2,HumansInfectAnimal_3,
+                           HumansInfectAnimal_4,HumansInfectAnimal_5))
+  timepoint <- paste0("T",d)
+  
+  wave$time <- rep(timepoint,nrow(wave))
+  
+  wave_3_4  <- rbind(wave_3_4 ,wave)
+}
+
+cols <- colnames(wave_3_4)
+wave_3_4[cols] <- lapply(wave_3_4[cols], factor) 
+levels(wave_3_4$PetOwner) <- c("No","Yes")
+```
+
+Data Size
+```{r data size wave3}
+table(wave_3_4$PetOwner,wave_3_4$time)
+```
+
+### Aware (How much have you read or heard about on the topic of COVID-19 and animals?)
+- Nothing at all  (1) 
+- A little  (2) 
+- A moderate amount  (3) 
+- A lot  (4) 
+- A great deal  (5) 
+
+```{r Aware plot, echo=FALSE}
+sumdata1 <- wave_3_4 %>%
+  group_by(time,PetOwner) %>%
+  summarise(count = n())
+
+sumdata2 <- wave_3_4 %>%
+  group_by(time,PetOwner,Aware) %>%
+  summarise(percent = n())
+
+sumdata2 <- merge(sumdata2,sumdata1,by=c("time","PetOwner"))
+sumdata2$percent <- sumdata2$percent/sumdata2$count
+levels(sumdata2$Aware) <- c("Nothing at all","A little",
+                               "A moderate amount","A lot",
+                               "A great deal")
+
+ggplot(sumdata2, aes(x=PetOwner,y=percent,fill=Aware))+geom_col(width = 0.5)+facet_grid(time~.)+
+  geom_text(aes(label = scales::percent(percent)),position = position_stack(vjust = .5))+
+  ggtitle("How much have you read or heard about on the topic of COVID-19 and animals?")
+```
+
+
+```{r Aware model}
+m <- clmm(Aware ~ PetOwner + time + (1|workerId), data = wave_3_4, nAGQ = 9)
+coef <- summary(m)$coefficients
+coef[(nrow(coef)-1):nrow(coef),]
+```
+
+### InfoSource (Which of the following options best describes where you are obtaining information about COVID-19 and animals?)
+- Media/new feeds  (1) 
+- Social media / Instagram / Facebook groups / twitter  (2) 
+- Government and regulatory agencies  (3) 
+- My veterinarian  (4) 
+- Animal shelter/animal protection organization  (5) 
+- Friends / family  (6) 
+- Other (please describe briefly)  (7) 
+- I do NOT have a source of information about COVID-19 and animals  (8) 
+
+```{r InfoSource table}
+table(wave_3_4$PetOwner,wave_3_4$InfoSource,wave_3_4$time)
+```
+
+```{r InfoSource plot}
+sumdata1 <- wave_3_4 %>%
+  group_by(time,PetOwner) %>%
+  summarise(count = n())
+
+sumdata2 <- wave_3_4 %>%
+  group_by(time,PetOwner,InfoSource) %>%
+  summarise(percent = n())
+
+sumdata2 <- merge(sumdata2,sumdata1,by=c("time","PetOwner"))
+sumdata2$percent <- sumdata2$percent/sumdata2$count
+levels(sumdata2$InfoSource) <- c("Media/new feeds","Social media / Instagram / Facebook groups / twitter",
+                               "Government and regulatory agencies","My veterinarian",
+                               "Animal shelter/animal protection organization","Friends / family",
+                               "Other","I do NOT have a source of information")
+
+ggplot(sumdata2, aes(x=PetOwner,y=percent,fill=InfoSource))+geom_col(width = 0.5)+facet_grid(.~time)+
+  geom_text(aes(label = scales::percent(percent)),position = position_stack(vjust = .5))+
+  ggtitle("Which of the following options best describes where you are obtaining information about COVID-19 and animals?")
+```
+
+
+```{r InfoSource model}
+cols <- c("InfoSource","PetOwner","time","workerId")
+dat_temp <- wave_3_4[,cols]
+m_data <- mlogit.data(data=dat_temp,
+                      choice='InfoSource',
+                      shape="wide",
+                      id.var='workerId')
+
+m1 <- mlogit(InfoSource ~ 0|PetOwner + time|0, data = m_data)
+parNames=names(m1$coefficients)
+rparArg=rep('n',length(parNames))
+names(rparArg)=parNames
+m <- mlogit(InfoSource ~ 0|PetOwner + time|0, data = m_data,
+            panel = TRUE, rpar = rparArg[1:7])
+coef <- summary(m)$coefficients
+coef_mx <- matrix(coef,7,4)
+colnames(coef_mx) <- c("Intercept","PetOwner","time","sd.ranef")
+rownames(coef_mx) <- paste0("InfoSource",c(2:8))
+coef_mx
+```
+
+### TrustInfo (How trustworthy do you consider this information source to be?)
+- Not at all trustworthy  (1) 
+- Slightly trustworthy  (2) 
+- Moderately trustworthy  (3) 
+- Very trustworthy  (4) 
+- Extremely trustworthy  (5) 
+
+```{r TrustInfo plot, echo=FALSE}
+sumdata1 <- wave_3_4 %>%
+  filter(InfoSource!=8) %>%
+  group_by(time,PetOwner) %>%
+  summarise(count = n())
+
+sumdata2 <- wave_3_4 %>%
+  filter(InfoSource!=8) %>%
+  group_by(time,PetOwner,TrustInfo) %>%
+  summarise(percent = n())
+
+sumdata2 <- merge(sumdata2,sumdata1,by=c("time","PetOwner"))
+sumdata2$percent <- sumdata2$percent/sumdata2$count
+levels(sumdata2$TrustInfo) <- c("Not at all trustworthy","Slightly trustworthy",
+                               "Moderately trustworthy","Very trustworthy",
+                               "Extremely trustworthy")
+
+ggplot(sumdata2, aes(x=PetOwner,y=percent,fill=TrustInfo))+geom_col(width = 0.5)+facet_grid(.~time)+
+  geom_text(aes(label = scales::percent(percent)),position = position_stack(vjust = .5))+
+  ggtitle("How trustworthy do you consider this information source to be?")
+```
+
+
+```{r TrustInfo model}
+m <- clmm(TrustInfo ~ PetOwner + time + (1|workerId), data = wave_3_4, nAGQ = 9)
+coef <- summary(m)$coefficients
+coef[(nrow(coef)-1):nrow(coef),]
+```
+
+### SusceptAnimal_1-7 (Based on your current knowledge, rate the extent to which you think each of the following animals can "catch" COVID-19.)
+- Definitely cannot catch COVID-19 (1)	
+- Probably cannot catch COVID-19 (2)	
+- Might or might not catch COVID-19 (3)	
+- Probably can catch COVID-19 (4)	
+- Definitely can catch COVID-19 (5)
+
+1-7
+- Tigers (13) 
+- Chimpanzees (14) 
+- Gorillas (15) 
+- Deer (16) 
+- Lions (19) 
+- Birds (20) 
+- Bats (21) 
+
+### Q92_1-9 (Based on your current knowledge, rate the extent to which you think each of the following animals can "catch" COVID-19.)
+
+1-9: 
+- Dogs (13) 
+- Cats (14) 
+- Ferrets (15) 
+- Rabbits (16) 
+- Hamsters (19) 
+- Horses (20) 
+- Pigs (21) 
+- Cattle (22) 
+- Chickens (23) 
+
+```{r SusceptAnimal_1-7+Q92_1-9 cols}
+catch1 <- paste0("SusceptAnimal_",c(1:7))
+catch2 <- paste0("Q92_",c(1:9))
+cols <- c(catch1,catch2)
+animals <- c("Tigers","Chimpanzees","Gorillas","Deer","Lions","Birds","Bats",
+             "Dogs","Cats","Ferrets","Rabbits","Hamsters","Horses","Pigs","Cattle","Chickens")
+```
+
+```{r Q92_3 plot}
+sumdata1 <- wave_3_4 %>%
+  group_by(time,PetOwner) %>%
+  summarise(count = n())
+
+sumdata2 <- wave_3_4 %>%
+  group_by(time,PetOwner,Q92_3) %>%
+  summarise(percent = n())
+
+sumdata2 <- merge(sumdata2,sumdata1,by=c("time","PetOwner"))
+sumdata2$percent <- sumdata2$percent/sumdata2$count
+levels(sumdata2$Q92_3) <- c("Definitely cannot catch COVID-19","Probably cannot catch COVID-19",
+                               "Might or might not catch COVID-19","Probably can catch COVID-19",
+                               "Definitely can catch COVID-19")
+
+ggplot(sumdata2, aes(x=PetOwner,y=percent,fill=Q92_3))+geom_col(width = 0.5)+facet_grid(.~time)+
+  geom_text(aes(label = scales::percent(percent)),position = position_stack(vjust = .5))+
+  ggtitle("Based on your current knowledge, \n rate the extent to which you think Ferrets can catch COVID-19.")
+```
+
+
+```{r susceptAnimal_1-7+Q92_1-9 model,message=FALSE,warning=FALSE,comment = NA}
+coef <- c()
+for(q in 1:length(cols)){
+  formula <- as.formula(paste0(cols[q],"~","PetOwner + time + (1|workerId)"))
+  m <- clmm(formula, data = wave_3_4,nAGQ = 9)
+  coef_q <- summary(m)$coefficients
+  coef <- rbind(coef,coef_q[(nrow(coef_q)-1):nrow(coef_q),])
+}
+coef
+```
+
+### InfectHumans_1-5 (Based on your current knowledge, rate the extent to which the following animals have the ability to give COVID-19 to humans.)
+
+- Definitely cannot give COVID-19 to humans (1)	
+- Probably cannot give COVID-19 to humans (2)	
+- Might or might give COVID-19 to humans (3)	
+- Probably can give COVID-19 to humans (4)	
+- Definitely can give COVID-19 to humans (5)
+
+1-5:
+- Cats (12) 
+- Dogs (13) 
+- Pigs (14) 
+- Chickens (15) 
+- Tigers (16) 
+
+```{r InfectHumans_1-5 model}
+animals <- c("Cats",
+             "Dogs",
+             "Pigs",
+             "Chickens",
+             "Tigers")
+coef <- c()
+for(q in 1:5){
+  formula <- as.formula(paste0("InfectHumans_",q,"~","PetOwner + time + (1|workerId)"))
+  m <- clmm(formula, data = wave_3_4,nAGQ = 9)
+  coef_q <- summary(m)$coefficients
+  coef <- rbind(coef,coef_q[(nrow(coef_q)-1):nrow(coef_q),])
+}
+coef
+```
+
+### HumansInfectAnimal_1-5 (Based on your current knowledge, rate the extent to which the following animals can catch COVID-19 from humans.)
+- Definitely cannot catch COVID-19 from humans (1)	
+- Probably cannot catch COVID-19 from humans (2)	
+- Might or might catch COVID-19 from humans (3)	
+- Probably can catch COVID-19 from humans (4)	
+- Definitely can catch COVID-19 from humans (5)
+
+1-5:
+- Cats (12) 
+- Dogs (13) 
+- Pigs (14) 
+- Chickens (15) 
+- Tigers (16) 
+
+```{r HumansInfectAnimal_1-5 model}
+animals <- c("Cats",
+             "Dogs",
+             "Pigs",
+             "Chickens",
+             "Tigers")
+ 
+coef <- c()
+for(q in 1:5){
+  formula <- as.formula(paste0("HumansInfectAnimal_",q,"~","PetOwner + time + (1|workerId)"))
+  m <- clmm(formula, data = wave_3_4,nAGQ = 9)
+  coef_q <- summary(m)$coefficients
+  coef <- rbind(coef,coef_q[(nrow(coef_q)-1):nrow(coef_q),])
+}
+coef
+```
+
+
+
+
+
+
+
+
+
+
+
+
+
