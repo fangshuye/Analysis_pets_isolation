@@ -1,0 +1,5295 @@
+---
+title: Report of the 1st wave of the survey on Pets, COVID-19 and isolation conducted on from 13th April-17th April)
+  
+#bibliography: referencescafo.bib 
+#csl: elsevier-vancouver.csl
+output:
+  html_document: default
+  pdf_document: default
+header-includes:
+ \usepackage{float}
+ \floatplacement{figure}{H}
+ \usepackage{xcolor}
+---
+<div style="margin-bottom:100px;">
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+# \textcolor{red}{Project Summary: Pet outcomes}
+
+This should be added
+
+# Purpose of the Project
+
+
+# Brief Summary
+
+
+
+
+# Basic Description of the Participants
+```{r figur1,echo = FALSE, message=FALSE, warning=FALSE}
+library(readxl)
+library(dplyr)
+library(ggplot2)
+library(knitr)
+library(xtable)
+#importing the data and arranging properly
+turk <- read_excel("2020-4-17 COVID_Raw_Data.xls")
+numResponces<-nrow(turk)
+#frequency grouped by outcomes and year
+###Table 1
+pets <- turk %>% group_by(PetOwner)
+## of reported pets
+numPET <-  turk %>%
+            dplyr::filter(PetOwner == 1) %>%
+            tally() %>%
+            .[,"n"]
+numDOG <-  turk %>%
+            dplyr::filter(PetOwner == 1, PetTypes_1 != 0) %>%
+            tally() %>%
+            .[,"n"]
+numCAT <-  turk %>%
+            dplyr::filter(PetOwner == 1, PetTypes_2 != 0) %>%
+            tally() %>%
+            .[,"n"]
+numHORSE <-  turk %>%
+            dplyr::filter(PetOwner == 1, PetTypes_3 != 0) %>%
+            tally() %>%
+            .[,"n"]
+numBIRD <-  turk %>%
+            dplyr::filter(PetOwner == 1, PetTypes_4 != 0) %>%
+            tally() %>%
+            .[,"n"]
+numREPTILE <-  turk %>%
+            dplyr::filter(PetOwner == 1, PetTypes_5 != 0) %>%
+            tally() %>%
+            .[,"n"]
+numSM <-  turk %>%
+            dplyr::filter(PetOwner == 1, PetTypes_6 != 0) %>%
+            tally() %>%
+            .[,"n"]
+numFISH <-  turk %>%
+            dplyr::filter(PetOwner == 1, PetTypes_7 != 0) %>%
+            tally() %>%
+            .[,"n"]
+numOTHER <-  turk %>%
+            dplyr::filter(PetOwner == 1, PetTypes_8 != 0) %>%
+            tally() %>%
+            .[,"n"]
+numDOGCAT <-  turk %>%
+            dplyr::filter(PetOwner == 1, PetTypes_1 != 0, PetTypes_2 !=0) %>%
+            tally() %>%
+            .[,"n"]
+propPET<-round((numPET/numResponces)*100,1)
+propDOG<-round((numDOG/numPET)*100,1)
+propCAT<-round((numCAT/numPET)*100,1)
+propHORSE<-round((numHORSE/numPET)*100,1)
+propFISH<-round((numFISH/numPET)*100,1)
+propREPTILE<-round((numREPTILE/numPET)*100,1)
+propOTHER<-round((numOTHER/numPET)*100,1)
+propSM<-round((numSM/numPET)*100,1)
+propDOGCAT<-round((numDOGCAT/numPET)*100,1)
+```
+
+The survey was conducted in April 2020, and `r numResponces` responces were obtained. Of these `r numResponces` respondents, `r numPET` reporting owning pets (`r propPET`%).  Of the pet owners,  `r numDOG` (`r propDOG`%) reported owning dogs, `r numCAT`(`r propCAT`%) reported owning cats, `r numHORSE`(`r propHORSE`%) reported owning horses, `r numREPTILE` (`r propREPTILE`%) reporting owning reptiles, `r numSM` (`r propSM`%) reporting owning small mammals, `r numFISH` (`r propFISH`%) reporting owning fish and `r numOTHER`(`r propOTHER`%) reported owning other animals. `r numDOGCAT` reported owning both cats and dogs.  
+
+```{r tables, results="asis"}
+library(xtable)
+library(broom)
+X <- summary(turk$age)
+X <- tidy(X)
+kable(X,
+      align = "rrrrr",
+      caption = "Summary characteritics for age.",
+      digits = 0)
+mean_age<-round(X[4],0)
+med_age<-round(X[3],0)
+#col.names = c("min", "Quart1", "med", "mean", "Qurt 3", "max"),
+
+```
+
+The mean age of particiants was `r mean_age` and the median was `r med_age`.
+
+## Kessler responces for the participants
+
+### During the past two weeks, how often did you feel tired for no good reason?
+
+```{r kessler1, echo=F, warning=F} 
+library(dplyr)
+
+library(forcats)
+turk <- read_excel("2020-4-17 COVID_Raw_Data.xls")
+turk$PetOwner <-
+  factor(
+    turk$PetOwner,
+    levels = c("0", "1"),
+    labels = c("Pets=No", "Pets=Yes")
+  )
+turk$Kessler1 <-
+  factor(
+    turk$Kessler1,
+    levels = c("1", "2", "3", "4", "5"),
+    labels = c(
+      "None of the time",
+      "A little of the time",
+      "Some of the time",
+      "Mostof the time",
+      "All of the time"
+    )
+  )
+
+#turk$PetOwner <- factor(turk$PetOwner, levels = c("0","1"), labels = c("Pets=No", "Pets=Yes")) %>% fct_explicit_na("Missing")
+#$turk$Kessler1 <- factor(turk$Kessler1, levels = c("1","2", "3","4","5"), labels = c("None of the time", "A little of the time","Some of the time", "Mostof the time", "All of the time")) %>% fct_explicit_na("Missing")
+Kessler1 <-
+  turk %>% group_by(PetOwner, Kessler1) %>% summarise(Frequency = length(Kessler1))
+t1 <- table(turk$PetOwner, turk$Kessler1)
+kable(t1, caption = "Contingency table for Kessler 1 responces and Pet Ownership")
+ggplot(Kessler1, aes(
+  fill = (PetOwner),
+  y = Frequency,
+  x = Kessler1
+)) +
+  geom_bar(position = "dodge", stat = "identity") +
+  geom_text(aes(label = Frequency),
+            position = position_dodge(width = 0.9),
+            vjust = -0.25) +
+  theme(
+    axis.text.x = element_text(
+      face = "bold",
+      color = "#993333",
+      size = 10,
+      angle = 90
+    ),
+    axis.text.y = element_text(
+      face = "bold",
+      color = "#993333",
+      size = 10,
+      angle = 0
+    )
+  ) +
+  ggtitle("Frequency distribution of Kessler 1 responces and Pet Ownership") +
+  labs(y = "Freqency of Responces", x = "Question: During the past two weeks, how often did you feel tired for no good reason?")
+
+ggplot(Kessler1, aes(
+  fill = (PetOwner),
+  y = Frequency,
+  x = Kessler1
+)) +
+  geom_bar(position = "fill", stat = "identity") +
+  theme(
+    axis.text.x = element_text(
+      face = "bold",
+      color = "#993333",
+      size = 10,
+      angle = 90
+    ),
+    axis.text.y = element_text(
+      face = "bold",
+      color = "#993333",
+      size = 10,
+      angle = 0
+    )
+  ) +
+  ggtitle("Frequency distribution of Kessler 1 responces and Pet Ownership") +
+  labs(y = "Freqency of Responces", x = "Question: During the past two weeks, how often did you feel tired for no good reason?")
+#making tables
+
+
+ggplot(Kessler1, aes(
+  fill = (Kessler1),
+  y = Frequency,
+  x = PetOwner
+)) +
+  geom_bar(position = "fill", stat = "identity") +
+  theme(
+    axis.text.x = element_text(
+      face = "bold",
+      color = "#993333",
+      size = 10,
+      angle = 90
+    ),
+    axis.text.y = element_text(
+      face = "bold",
+      color = "#993333",
+      size = 10,
+      angle = 0
+    )
+  ) +
+  ggtitle("Frequency distribution of Kessler 1 responces and Pet Ownership") +
+  labs(y = "Freqency of Responces", x = "Question: During the past two weeks, how often did you feel tired for no good reason?")
+#making tables
+
+
+Kessler1.fit = glm(PetOwner ~ Kessler1, family = binomial, data = turk)
+kable(summary(Kessler1.fit)$coef, digits = 2)
+
+```
+
+<div style="margin-bottom:100px;">
+###  "During the past two weeks, how often did you feel nervous? 
+```{r kessler2, echo=F, warning=F} 
+library(dplyr)
+turk <- read_excel("2020-4-17 COVID_Raw_Data.xls")
+#turk$PetOwner<-as.factor(turk$PetOwner)
+turk$PetOwner <-
+  factor(
+    turk$PetOwner,
+    levels = c("0", "1"),
+    labels = c("Pets=No", "Pets=Yes")
+  )
+turk$Kessler2 <-
+  factor(
+    turk$Kessler2,
+    levels = c("1", "2", "3", "4", "5"),
+    labels = c(
+      "None of the time",
+      "A little of the time",
+      "Some of the time",
+      "Mostof the time",
+      "All of the time"
+    )
+  )
+#fct_explicit_na(turk$PetOwner, na_level = "(Missing)")
+
+t2 <- table(turk$PetOwner, turk$Kessler2)
+kable(t2, caption = "Contingency Table for Kessler 2 responces and Pet Ownership")
+
+Kessler2 <-
+  turk %>% group_by(PetOwner, Kessler2) %>% summarise(Frequency = length(Kessler2))
+
+ggplot(Kessler2, aes(
+  fill = (PetOwner),
+  y = Frequency,
+  x = Kessler2
+)) +
+  geom_bar(position = "dodge", stat = "identity") +
+  geom_text(aes(label = Frequency),
+            position = position_dodge(width = 0.9),
+            vjust = -0.25) +
+  theme(
+    axis.text.x = element_text(
+      face = "bold",
+      color = "#993333",
+      size = 10,
+      angle = 90
+    ),
+    axis.text.y = element_text(
+      face = "bold",
+      color = "#993333",
+      size = 10,
+      angle = 0
+    )
+  ) +
+  ggtitle("Frequency distribution of Kessler 2 responces and Pet Ownership") +
+  labs(y = "Freqency of Responces", x = "During the past two weeks, how often did you feel nervous?")
+
+ggplot(Kessler2, aes(
+  fill = (PetOwner),
+  y = Frequency,
+  x = Kessler2
+)) +
+  geom_bar(position = "fill", stat = "identity") +
+  theme(
+    axis.text.x = element_text(
+      face = "bold",
+      color = "#993333",
+      size = 10,
+      angle = 90
+    ),
+    axis.text.y = element_text(
+      face = "bold",
+      color = "#993333",
+      size = 10,
+      angle = 0
+    )
+  ) +
+  ggtitle("Frequency distribution of Kessler 2 responces and Pet Ownership") +
+  labs(y = "Freqency of Responces", x = "During the past two weeks, how often did you feel nervous?")
+#making tables
+
+ggplot(Kessler2, aes(
+  fill = (Kessler2),
+  y = Frequency,
+  x = PetOwner
+)) +
+  geom_bar(position = "fill", stat = "identity") +
+  theme(
+    axis.text.x = element_text(
+      face = "bold",
+      color = "#993333",
+      size = 10,
+      angle = 90
+    ),
+    axis.text.y = element_text(
+      face = "bold",
+      color = "#993333",
+      size = 10,
+      angle = 0
+    )
+  ) +
+  ggtitle("Frequency distribution of Kessler 2 responces and Pet Ownership") +
+  labs(y = "Freqency of Responces", x = "Question: During the past two weeks, how often did you feel nervous?")
+
+Kessler2.fit = glm(PetOwner ~ Kessler2, family = binomial, data = turk)
+kable(summary(Kessler2.fit)$coef, digits = 2)
+```
+
+<div style="margin-bottom:100px;">
+## "During the past two weeks, how often did you feel so nervous that nothing could calm you down??"
+```{r kessler3, echo=F, warning=F} 
+library(dplyr)
+turk <- read_excel("2020-4-17 COVID_Raw_Data.xls")
+#turk$PetOwner<-as.factor(turk$PetOwner)
+turk$PetOwner <-
+  factor(
+    turk$PetOwner,
+    levels = c("0", "1"),
+    labels = c("Pets=No", "Pets=Yes")
+  )
+turk$Kessler3 <-
+  factor(
+    turk$Kessler3,
+    levels = c("1", "2", "3", "4", "5"),
+    labels = c(
+      "None of the time",
+      "A little of the time",
+      "Some of the time",
+      "Mostof the time",
+      "All of the time"
+    )
+  )
+
+#fct_explicit_na(turk$PetOwner, na_level = "(Missing)")
+t3 <- table(turk$PetOwner, turk$Kessler3)
+kable(t3, caption = "Contingency Table for Kessler 3 responces and Pet Ownership")
+
+Kessler3 <-
+  turk %>% group_by(PetOwner, Kessler3) %>% summarise(Frequency = length(Kessler3))
+ggplot(Kessler3, aes(
+  fill = (PetOwner),
+  y = Frequency,
+  x = Kessler3
+)) +
+  geom_bar(position = "dodge", stat = "identity") +
+  geom_text(aes(label = Frequency),
+            position = position_dodge(width = 0.9),
+            vjust = -0.25) +
+  theme(
+    axis.text.x = element_text(
+      face = "bold",
+      color = "#993333",
+      size = 10,
+      angle = 90
+    ),
+    axis.text.y = element_text(
+      face = "bold",
+      color = "#993333",
+      size = 10,
+      angle = 0
+    )
+  ) +
+  ggtitle("Frequency distribution of Kessler 3 responces and Pet Ownership") +
+  labs(y = "Freqency of Responces", x = "During the past two weeks, how often \ did you feel so nervous that nothing could calm you down??")
+
+
+ggplot(Kessler3, aes(
+  fill = (PetOwner),
+  y = Frequency,
+  x = Kessler3
+)) +
+  geom_bar(position = "fill", stat = "identity") +
+  theme(
+    axis.text.x = element_text(
+      face = "bold",
+      color = "#993333",
+      size = 10,
+      angle = 90
+    ),
+    axis.text.y = element_text(
+      face = "bold",
+      color = "#993333",
+      size = 10,
+      angle = 0
+    )
+  ) +
+  ggtitle("Frequency distribution of Kessler 3 responces and Pet Ownership") +
+  labs(y = "Freqency of Responces", x = "During the past two weeks, how often \ did you feel so nervous that nothing could calm you down??")
+
+
+
+ggplot(Kessler3, aes(
+  fill = (Kessler3),
+  y = Frequency,
+  x = PetOwner
+)) +
+  geom_bar(position = "fill", stat = "identity") +
+  theme(
+    axis.text.x = element_text(
+      face = "bold",
+      color = "#993333",
+      size = 10,
+      angle = 90
+    ),
+    axis.text.y = element_text(
+      face = "bold",
+      color = "#993333",
+      size = 10,
+      angle = 0
+    )
+  ) +
+  ggtitle("Frequency distribution of Kessler 3 responces and Pet Ownership") +
+  labs(y = "Freqency of Responces", x = "During the past two weeks, how often \ did you feel so nervous that nothing could calm you down??")
+
+
+Kessler3.fit = glm(PetOwner ~ Kessler3, family = binomial, data = turk)
+kable(summary(Kessler3.fit)$coef, digits = 2)
+
+```
+
+<div style="margin-bottom:100px;">
+## "During the past two weeks, how often did you feel hopeless?"
+```{r kessler4, echo=F, warning=F} 
+library(dplyr)
+turk <- read_excel("2020-4-17 COVID_Raw_Data.xls")
+#turk$PetOwner<-as.factor(turk$PetOwner)
+turk$PetOwner <-
+  factor(
+    turk$PetOwner,
+    levels = c("0", "1"),
+    labels = c("Pets=No", "Pets=Yes")
+  )
+turk$Kessler4 <-
+  factor(
+    turk$Kessler4,
+    levels = c("1", "2", "3", "4", "5"),
+    labels = c(
+      "None of the time",
+      "A little of the time",
+      "Some of the time",
+      "Mostof the time",
+      "All of the time"
+    )
+  )
+
+#fct_explicit_na(turk$PetOwner, na_level = "(Missing)")
+t4 <- table(turk$PetOwner, turk$Kessler4)
+kable(t4, caption = "Contingency Table for Kessler 4 responces and Pet Ownership")
+
+Kessler4 <-
+  turk %>% group_by(PetOwner, Kessler4) %>% summarise(Frequency = length(Kessler4))
+ggplot(Kessler4, aes(
+  fill = (PetOwner),
+  y = Frequency,
+  x = Kessler4
+)) +
+  geom_bar(position = "dodge", stat = "identity") +
+  geom_text(aes(label = Frequency),
+            position = position_dodge(width = 0.9),
+            vjust = -0.25) +
+  theme(
+    axis.text.x = element_text(
+      face = "bold",
+      color = "#993333",
+      size = 10,
+      angle = 90
+    ),
+    axis.text.y = element_text(
+      face = "bold",
+      color = "#993333",
+      size = 10,
+      angle = 0
+    )
+  ) +
+  ggtitle("Frequency distribution of Kessler 4 responces and Pet Ownership") +
+  labs(y = "Freqency of Responces", x = "During the past two weeks, how often did you feel hopeless?")
+
+ggplot(Kessler4, aes(
+  fill = (PetOwner),
+  y = Frequency,
+  x = Kessler4
+)) +
+  geom_bar(position = "fill", stat = "identity") +
+  theme(
+    axis.text.x = element_text(
+      face = "bold",
+      color = "#993333",
+      size = 10,
+      angle = 90
+    ),
+    axis.text.y = element_text(
+      face = "bold",
+      color = "#993333",
+      size = 10,
+      angle = 0
+    )
+  ) +
+  ggtitle("Frequency distribution of Kessler 4 responces and Pet Ownership") +
+  labs(y = "Freqency of Responces", x = "During the past two weeks, how often did you feel hopeless?")
+
+ggplot(Kessler4, aes(
+  fill = (Kessler4),
+  y = Frequency,
+  x = PetOwner
+)) +
+  geom_bar(position = "fill", stat = "identity") +
+  theme(
+    axis.text.x = element_text(
+      face = "bold",
+      color = "#993333",
+      size = 10,
+      angle = 90
+    ),
+    axis.text.y = element_text(
+      face = "bold",
+      color = "#993333",
+      size = 10,
+      angle = 0
+    )
+  ) +
+  ggtitle("Frequency distribution of Kessler 4 responces and Pet Ownership") +
+  labs(y = "Freqency of Responces", x = "During the past two weeks, how often did you feel hopeless?")
+
+Kessler4.fit = glm(PetOwner ~ Kessler4, family = binomial, data = turk)
+kable(summary(Kessler4.fit)$coef, digits = 2)
+
+```
+
+<div style="margin-bottom:100px;">
+## *"During the past two weeks, how often did you feel restless or fidgety?"*
+```{r kessler5, echo=F, warning=F} 
+library(dplyr)
+turk <- read_excel("2020-4-17 COVID_Raw_Data.xls")
+#turk$PetOwner<-as.factor(turk$PetOwner)
+turk$PetOwner <-
+  factor(
+    turk$PetOwner,
+    levels = c("0", "1"),
+    labels = c("Pets=No", "Pets=Yes")
+  )
+turk$Kessler5 <-
+  factor(
+    turk$Kessler5,
+    levels = c("1", "2", "3", "4", "5"),
+    labels = c(
+      "None of the time",
+      "A little of the time",
+      "Some of the time",
+      "Mostof the time",
+      "All of the time"
+    )
+  )
+
+#fct_explicit_na(turk$PetOwner, na_level = "(Missing)")
+t5 <- table(turk$PetOwner, turk$Kessler5)
+kable(t5, caption = "Contingency Table for Kessler 5 responces and Pet Ownership")
+
+Kessler5 <-
+  turk %>% group_by(PetOwner, Kessler5) %>% summarise(Frequency = length(Kessler5))
+ggplot(Kessler5, aes(
+  fill = (PetOwner),
+  y = Frequency,
+  x = Kessler5
+)) +
+  geom_bar(position = "dodge", stat = "identity") +
+  geom_text(aes(label = Frequency),
+            position = position_dodge(width = 0.9),
+            vjust = -0.25) +
+  theme(
+    axis.text.x = element_text(
+      face = "bold",
+      color = "#993333",
+      size = 10,
+      angle = 90
+    ),
+    axis.text.y = element_text(
+      face = "bold",
+      color = "#993333",
+      size = 10,
+      angle = 0
+    )
+  ) +
+  ggtitle("Frequency distribution of Kessler 5 responces and Pet Ownership") +
+  labs(y = "Freqency of Responces", x = "Question: During the past two weeks, how often did you feel restless or fidgety")
+
+ggplot(Kessler5, aes(
+  fill = (PetOwner),
+  y = Frequency,
+  x = Kessler5
+)) +
+  geom_bar(position = "fill", stat = "identity") +
+  theme(
+    axis.text.x = element_text(
+      face = "bold",
+      color = "#993333",
+      size = 10,
+      angle = 90
+    ),
+    axis.text.y = element_text(
+      face = "bold",
+      color = "#993333",
+      size = 10,
+      angle = 0
+    )
+  ) +
+  ggtitle("Frequency distribution of Kessler 5 responces and Pet Ownership") +
+  labs(y = "Freqency of Responces", x = "Question: During the past two weeks, how often did you feel restless or fidgety")
+
+ggplot(Kessler5, aes(
+  fill = (Kessler5),
+  y = Frequency,
+  x = PetOwner
+)) +
+  geom_bar(position = "fill", stat = "identity") +
+  theme(
+    axis.text.x = element_text(
+      face = "bold",
+      color = "#993333",
+      size = 10,
+      angle = 90
+    ),
+    axis.text.y = element_text(
+      face = "bold",
+      color = "#993333",
+      size = 10,
+      angle = 0
+    )
+  ) +
+  ggtitle("Frequency distribution of Kessler 5 responces and Pet Ownership") +
+  labs(y = "Freqency of Responces", x = "Question: During the past two weeks, how often did you feel restless or fidgety")
+
+Kessler5.fit = glm(PetOwner ~ Kessler5, family = binomial, data = turk)
+kable(summary(Kessler5.fit)$coef, digits = 2)
+
+```
+
+<div style="margin-bottom:100px;">
+## *"During the past two weeks, how often did you feel so restless that you could not sit still?"*
+```{r kessler6, echo=F, warning=F} 
+library(dplyr)
+turk <- read_excel("2020-4-17 COVID_Raw_Data.xls")
+#turk$PetOwner<-as.factor(turk$PetOwner)
+turk$PetOwner <-
+  factor(
+    turk$PetOwner,
+    levels = c("0", "1"),
+    labels = c("Pets=No", "Pets=Yes")
+  )
+turk$Kessler6 <-
+  factor(
+    turk$Kessler6,
+    levels = c("1", "2", "3", "4", "5"),
+    labels = c(
+      "None of the time",
+      "A little of the time",
+      "Some of the time",
+      "Mostof the time",
+      "All of the time"
+    )
+  )
+
+#fct_explicit_na(turk$PetOwner, na_level = "(Missing)")
+t6 <- table(turk$PetOwner, turk$Kessler6)
+kable(t6, caption = "Contingency Table for Kessler 6 responces and Pet Ownership")
+
+Kessler6 <-
+  turk %>% group_by(PetOwner, Kessler6) %>% summarise(Frequency = length(Kessler6))
+ggplot(Kessler6, aes(
+  fill = (PetOwner),
+  y = Frequency,
+  x = Kessler6
+)) +
+  geom_bar(position = "dodge", stat = "identity") +
+  geom_text(aes(label = Frequency),
+            position = position_dodge(width = 0.9),
+            vjust = -0.25) +
+  theme(
+    axis.text.x = element_text(
+      face = "bold",
+      color = "#993333",
+      size = 10,
+      angle = 90
+    ),
+    axis.text.y = element_text(
+      face = "bold",
+      color = "#993333",
+      size = 10,
+      angle = 0
+    )
+  ) +
+  ggtitle("Frequency distribution of Kessler 6 responces and Pet Ownership") +
+  labs(y = "Freqency of Responces", x = "Question: During the past two weeks, how often did you feel so restless that you could not sit still")
+
+ggplot(Kessler6, aes(
+  fill = (PetOwner),
+  y = Frequency,
+  x = Kessler6
+)) +
+  geom_bar(position = "fill", stat = "identity") +
+  theme(
+    axis.text.x = element_text(
+      face = "bold",
+      color = "#993333",
+      size = 10,
+      angle = 90
+    ),
+    axis.text.y = element_text(
+      face = "bold",
+      color = "#993333",
+      size = 10,
+      angle = 0
+    )
+  ) +
+  ggtitle("Frequency distribution of Kessler 6 responces and Pet Ownership") +
+  labs(y = "Freqency of Responces", x = "Question: During the past two weeks, how often did you feel so restless that you could not sit still")
+
+ggplot(Kessler6, aes(
+  fill = (Kessler6),
+  y = Frequency,
+  x = PetOwner
+)) +
+  geom_bar(position = "fill", stat = "identity") +
+  theme(
+    axis.text.x = element_text(
+      face = "bold",
+      color = "#993333",
+      size = 10,
+      angle = 90
+    ),
+    axis.text.y = element_text(
+      face = "bold",
+      color = "#993333",
+      size = 10,
+      angle = 0
+    )
+  ) +
+  ggtitle("Frequency distribution of Kessler 6 responces and Pet Ownership") +
+  labs(y = "Freqency of Responces", x = "Question: During the past two weeks, how often did you feel so restless that you could not sit still")
+
+Kessler6.fit = glm(PetOwner ~ Kessler6, family = binomial, data = turk)
+kable(summary(Kessler6.fit)$coef, digits = 2)
+
+```
+
+<div style="margin-bottom:100px;">
+### *"During the past two weeks, how often did you feel depressed??"*
+```{r kessler7, echo=F, warning=F} 
+library(dplyr)
+turk <- read_excel("2020-4-17 COVID_Raw_Data.xls")
+#turk$PetOwner<-as.factor(turk$PetOwner)
+turk$PetOwner <-
+  factor(
+    turk$PetOwner,
+    levels = c("0", "1"),
+    labels = c("Pets=No", "Pets=Yes")
+  )
+turk$Kessler7 <-
+  factor(
+    turk$Kessler7,
+    levels = c("1", "2", "3", "4", "5"),
+    labels = c(
+      "None of the time",
+      "A little of the time",
+      "Some of the time",
+      "Mostof the time",
+      "All of the time"
+    )
+  )
+
+#fct_explicit_na(turk$PetOwner, na_level = "(Missing)")
+t7 <- table(turk$PetOwner, turk$Kessler7)
+kable(t7, caption = "Contingency Table for Kessler 7 responces and Pet Ownership")
+
+Kessler7 <-
+  turk %>% group_by(PetOwner, Kessler7) %>% summarise(Frequency = length(Kessler7))
+ggplot(Kessler7, aes(
+  fill = (PetOwner),
+  y = Frequency,
+  x = Kessler7
+)) +
+  geom_bar(position = "dodge", stat = "identity") +
+  geom_text(aes(label = Frequency),
+            position = position_dodge(width = 0.9),
+            vjust = -0.25) +
+  theme(
+    axis.text.x = element_text(
+      face = "bold",
+      color = "#993333",
+      size = 10,
+      angle = 90
+    ),
+    axis.text.y = element_text(
+      face = "bold",
+      color = "#993333",
+      size = 10,
+      angle = 0
+    )
+  ) +
+  ggtitle("Frequency distribution of Kessler 7 responces and Pet Ownership") +
+  labs(y = "Freqency of Responces", x = "Question: During the past two weeks, how often did you feel depressed?")
+
+ggplot(Kessler7, aes(
+  fill = (PetOwner),
+  y = Frequency,
+  x = Kessler7
+)) +
+  geom_bar(position = "fill", stat = "identity") +
+  theme(
+    axis.text.x = element_text(
+      face = "bold",
+      color = "#993333",
+      size = 10,
+      angle = 90
+    ),
+    axis.text.y = element_text(
+      face = "bold",
+      color = "#993333",
+      size = 10,
+      angle = 0
+    )
+  ) +
+  ggtitle("Frequency distribution of Kessler 7 responces and Pet Ownership") +
+  labs(y = "Freqency of Responces", x = "Question: During the past two weeks, how often did you feel depressed?")
+
+ggplot(Kessler7, aes(
+  fill = (Kessler7),
+  y = Frequency,
+  x = PetOwner
+)) +
+  geom_bar(position = "fill", stat = "identity") +
+  theme(
+    axis.text.x = element_text(
+      face = "bold",
+      color = "#993333",
+      size = 10,
+      angle = 90
+    ),
+    axis.text.y = element_text(
+      face = "bold",
+      color = "#993333",
+      size = 10,
+      angle = 0
+    )
+  ) +
+  ggtitle("Frequency distribution of Kessler 7 responces and Pet Ownership") +
+  labs(y = "Freqency of Responces", x = "Question: During the past two weeks, how often did you feel depressed?")
+
+Kessler7.fit = glm(PetOwner ~ Kessler7, family = binomial, data = turk)
+kable(summary(Kessler7.fit)$coef, digits = 2)
+```
+
+<div style="margin-bottom:100px;">
+### *"During the past two weeks, how often did you feel so depressed that nothing could cheer you up?"*
+```{r kessler8, echo=F, warning=F} 
+library(dplyr)
+turk <- read_excel("2020-4-17 COVID_Raw_Data.xls")
+#turk$PetOwner<-as.factor(turk$PetOwner)
+turk$PetOwner <- factor(turk$PetOwner, levels = c("0","1"), labels = c("Pets=No", "Pets=Yes"))
+turk$Kessler8 <- factor(turk$Kessler8, levels = c("1","2", "3","4","5"), labels = c("None of the time", "A little of the time","Some of the time", "Mostof the time", "All of the time"))
+
+#fct_explicit_na(turk$PetOwner, na_level = "(Missing)")
+t8 <- table(turk$PetOwner, turk$Kessler8)
+kable(t8, caption = "Contingency Table for Kessler 8 responces and Pet Ownership")
+
+Kessler8 <-turk %>%group_by(PetOwner, Kessler8)%>%summarise(Frequency =length(Kessler8)) 
+ggplot(Kessler8, aes(fill= (PetOwner), y=Frequency, x=Kessler8)) + 
+geom_bar(position="dodge", stat="identity") +
+  geom_text(aes(label = Frequency),
+            position = position_dodge(width = 0.9),
+            vjust = -0.25) +
+theme(axis.text.x = element_text(face="bold", color="#993333", 
+                           size=10, angle=90),
+          axis.text.y = element_text(face="bold", color="#993333", 
+                           size=10, angle=0)) +
+ggtitle("Frequency distribution of Kessler 8 responces and Pet Ownership") +
+labs(y="Freqency of Responces", x = "Question: During the past two weeks, how often did you / feel so depressed that nothing could cheer you up?")
+
+ggplot(Kessler8, aes(
+  fill = (PetOwner),
+  y = Frequency,
+  x = Kessler8
+)) +
+  geom_bar(position = "fill", stat = "identity") +
+  theme(
+    axis.text.x = element_text(
+      face = "bold",
+      color = "#993333",
+      size = 10,
+      angle = 90
+    ),
+    axis.text.y = element_text(
+      face = "bold",
+      color = "#993333",
+      size = 10,
+      angle = 0
+    )
+  ) +
+  ggtitle("Frequency distribution of Kessler 8 responces and Pet Ownership") +
+labs(y="Freqency of Responces", x = "Question: During the past two weeks, how often did you / feel so depressed that nothing could cheer you up?")
+
+ggplot(Kessler8, aes(
+  fill = (Kessler8),
+  y = Frequency,
+  x = PetOwner
+)) +
+  geom_bar(position = "fill", stat = "identity") +
+  theme(
+    axis.text.x = element_text(
+      face = "bold",
+      color = "#993333",
+      size = 10,
+      angle = 90
+    ),
+    axis.text.y = element_text(
+      face = "bold",
+      color = "#993333",
+      size = 10,
+      angle = 0
+    )
+  ) +
+  ggtitle("Frequency distribution of Kessler 8 responces and Pet Ownership") +
+labs(y="Freqency of Responces", x = "Question: During the past two weeks, how often did you / feel so depressed that nothing could cheer you up?")
+
+Kessler8.fit=glm(PetOwner~Kessler8,family=binomial,data=turk)
+kable(summary(Kessler8.fit)$coef, digits=2)
+
+```
+
+<div style="margin-bottom:100px;">
+### *"During the past two weeks, how often did you feel that everything was an effort?"*
+```{r kessler9, echo=F, warning=F} 
+library(dplyr)
+turk <- read_excel("2020-4-17 COVID_Raw_Data.xls")
+#turk$PetOwner<-as.factor(turk$PetOwner)
+turk$PetOwner <- factor(turk$PetOwner, levels = c("0","1"), labels = c("Pets=No", "Pets=Yes"))
+turk$Kessler9 <- factor(turk$Kessler9, levels = c("1","2", "3","4","5"), labels = c("None of the time", "A little of the time","Some of the time", "Mostof the time", "All of the time"))
+
+#fct_explicit_na(turk$PetOwner, na_level = "(Missing)")
+t9 <- table(turk$PetOwner, turk$Kessler9)
+kable(t9, caption = "Contingency Table for Kessler 9 responces and Pet Ownership")
+
+Kessler9 <-turk %>%group_by(PetOwner, Kessler9)%>%summarise(Frequency =length(Kessler9)) 
+ggplot(Kessler9, aes(fill= (PetOwner), y=Frequency, x=Kessler9)) + 
+geom_bar(position="dodge", stat="identity") +
+theme(axis.text.x = element_text(face="bold", color="#993333", 
+                           size=10, angle=90),
+          axis.text.y = element_text(face="bold", color="#993333", 
+                           size=10, angle=0)) +
+ggtitle("Frequency distribution of Kessler 9 responces and Pet Ownership") +
+labs(y="Freqency of Responces", x = "Question: During the past two weeks, how often did you feel that everything was an effort??")
+
+
+ggplot(Kessler9, aes(
+  fill = (PetOwner),
+  y = Frequency,
+  x = Kessler9
+)) +
+  geom_bar(position = "fill", stat = "identity") +
+  theme(
+    axis.text.x = element_text(
+      face = "bold",
+      color = "#993333",
+      size = 10,
+      angle = 90
+    ),
+    axis.text.y = element_text(
+      face = "bold",
+      color = "#993333",
+      size = 10,
+      angle = 0
+    )
+  ) +
+  ggtitle("Frequency distribution of Kessler 9 responces and Pet Ownership") +
+labs(y="Freqency of Responces", x = "Question: During the past two weeks, how often did you feel that everything was an effort??")
+
+ggplot(Kessler9, aes(
+  fill = (Kessler9),
+  y = Frequency,
+  x = PetOwner
+)) +
+  geom_bar(position = "fill", stat = "identity") +
+  theme(
+    axis.text.x = element_text(
+      face = "bold",
+      color = "#993333",
+      size = 10,
+      angle = 90
+    ),
+    axis.text.y = element_text(
+      face = "bold",
+      color = "#993333",
+      size = 10,
+      angle = 0
+    )
+  ) +
+ggtitle("Frequency distribution of Kessler 9 responces and Pet Ownership") +
+labs(y="Freqency of Responces", x = "Question: During the past two weeks, how often did you feel that everything was an effort??")
+
+Kessler9.fit=glm(PetOwner~Kessler9,family=binomial,data=turk)
+kable(summary(Kessler9.fit)$coef, digits=2)
+
+```
+
+<div style="margin-bottom:100px;">
+### *"During the past two weeks, how often did you feel worthless?"*
+
+```{r kessler10, echo=F, warning=F} 
+library(dplyr)
+turk <- read_excel("2020-4-17 COVID_Raw_Data.xls")
+#turk$PetOwner<-as.factor(turk$PetOwner)
+turk$PetOwner <- factor(turk$PetOwner, levels = c("0","1"), labels = c("Pets=No", "Pets=Yes"))
+turk$Kessler10 <- factor(turk$Kessler10, levels = c("1","2", "3","4","5"), labels = c("None of the time", "A little of the time","Some of the time", "Mostof the time", "All of the time"))
+
+#fct_explicit_na(turk$PetOwner, na_level = "(Missing)")
+t10 <- table(turk$PetOwner, turk$Kessler10)
+kable(t10, caption = "Contingency Table for Kessler 10 responces and Pet Ownership")
+
+Kessler10 <-turk %>%group_by(PetOwner, Kessler10)%>%summarise(Frequency =length(Kessler10)) 
+ggplot(Kessler10, aes(fill= (PetOwner), y=Frequency, x=Kessler10)) + 
+geom_bar(position="dodge", stat="identity") +
+theme(axis.text.x = element_text(face="bold", color="#993333", 
+                           size=10, angle=90),
+          axis.text.y = element_text(face="bold", color="#993333", 
+                           size=10, angle=0)) +
+ggtitle("Frequency distribution of Kessler 10 responces and Pet Ownership") +
+labs(y="Freqency of Responces", x = "Question: During the past two weeks, how often did you feel worthless??")
+
+
+ggplot(Kessler10, aes(
+  fill = (PetOwner),
+  y = Frequency,
+  x = Kessler10
+)) +
+  geom_bar(position = "fill", stat = "identity") +
+  theme(
+    axis.text.x = element_text(
+      face = "bold",
+      color = "#993333",
+      size = 10,
+      angle = 90
+    ),
+    axis.text.y = element_text(
+      face = "bold",
+      color = "#993333",
+      size = 10,
+      angle = 0
+    )
+  ) +
+ggtitle("Frequency distribution of Kessler 10 responces and Pet Ownership") +
+labs(y="Freqency of Responces", x = "Question: During the past two weeks, how often did you feel worthless??")
+
+ggplot(Kessler10, aes(
+  fill = (Kessler10),
+  y = Frequency,
+  x = PetOwner
+)) +
+  geom_bar(position = "fill", stat = "identity") +
+  theme(
+    axis.text.x = element_text(
+      face = "bold",
+      color = "#993333",
+      size = 10,
+      angle = 90
+    ),
+    axis.text.y = element_text(
+      face = "bold",
+      color = "#993333",
+      size = 10,
+      angle = 0
+    )
+  ) +
+ggtitle("Frequency distribution of Kessler 10 responces and Pet Ownership") +
+labs(y="Freqency of Responces", x = "Question: During the past two weeks, how often did you feel worthless??")
+
+Kessler10.fit=glm(PetOwner~Kessler10,family=binomial,data=turk)
+kable(summary(Kessler10.fit)$coef, digits=2)
+
+```
+
+<div style="margin-bottom:100px;">
+### *"During the past two weeks, how often have you been bothered by feeling nervous, anxious or on edge?"*
+```{r Gad1, echo=F, warning=F} 
+library(dplyr)
+turk <- read_excel("2020-4-17 COVID_Raw_Data.xls")
+#turk$PetOwner<-as.factor(turk$PetOwner)
+turk$PetOwner <-
+  factor(
+    turk$PetOwner,
+    levels = c("0", "1"),
+    labels = c("Pets=No", "Pets=Yes")
+  )
+turk$Gad1 <-
+  factor(
+    turk$Gad1,
+    levels = c("1", "2", "3", "4", "5"),
+    labels = c(
+      "None of the time",
+      "A little of the time",
+      "Some of the time",
+      "Mostof the time",
+      "All of the time"
+    )
+  )
+
+#fct_explicit_na(turk$PetOwner, na_level = "(Missing)")
+tGad1 <- table(turk$PetOwner, turk$Gad1)
+kable(tGad1, caption = "Contingency Table for Gad1 responces and Pet Ownership")
+
+Gad1 <-
+  turk %>% group_by(PetOwner, Gad1) %>% summarise(Frequency = length(Gad1))
+ggplot(Gad1, aes(
+  fill = (PetOwner),
+  y = Frequency,
+  x = Gad1
+)) +
+  geom_bar(position = "dodge", stat = "identity") +
+  theme(
+    axis.text.x = element_text(
+      face = "bold",
+      color = "#993333",
+      size = 10,
+      angle = 90
+    ),
+    axis.text.y = element_text(
+      face = "bold",
+      color = "#993333",
+      size = 10,
+      angle = 0
+    )
+  ) +
+  ggtitle("Frequency distribution of Gad1 responces and Pet Ownership") +
+  labs(y = "Freqency of Responces", x = "Question: During the past two weeks, how often have you been bothered by feeling nervous, anxious or on edge?")
+Gad1.fit = glm(PetOwner ~ Gad1, family = binomial, data = turk)
+kable(summary(Gad1.fit)$coef, digits = 2)
+
+```
+
+<div style="margin-bottom:100px;">
+### *"During the past two weeks, how often have you been bothered by not being able to stop or control worrying?"*
+
+```{r Gad2, echo=F, warning=F} 
+library(dplyr)
+turk <- read_excel("2020-4-17 COVID_Raw_Data.xls")
+#turk$PetOwner<-as.factor(turk$PetOwner)
+turk$PetOwner <-
+  factor(
+    turk$PetOwner,
+    levels = c("0", "1"),
+    labels = c("Pets=No", "Pets=Yes")
+  )
+turk$Gad2 <-
+  factor(
+    turk$Gad2,
+    levels = c("1", "2", "3", "4", "5"),
+    labels = c(
+      "None of the time",
+      "A little of the time",
+      "Some of the time",
+      "Mostof the time",
+      "All of the time"
+    )
+  )
+
+#fct_explicit_na(turk$PetOwner, na_level = "(Missing)")
+tGad2 <- table(turk$PetOwner, turk$Gad2)
+kable(tGad2, caption = "Contingency Table for Gad2 responces and Pet Ownership")
+
+Gad2 <-
+  turk %>% group_by(PetOwner, Gad2) %>% summarise(Frequency = length(Gad2))
+ggplot(Gad2, aes(
+  fill = (PetOwner),
+  y = Frequency,
+  x = Gad2
+)) +
+  geom_bar(position = "dodge", stat = "identity") +
+  theme(
+    axis.text.x = element_text(
+      face = "bold",
+      color = "#993333",
+      size = 10,
+      angle = 90
+    ),
+    axis.text.y = element_text(
+      face = "bold",
+      color = "#993333",
+      size = 10,
+      angle = 0
+    )
+  ) +
+  ggtitle("Frequency distribution of Gad2 responces and Pet Ownership") +
+  labs(y = "Freqency of Responces", x = "Question:During the past two weeks, how often have you been bothered by not being able to stop or control worrying?")
+Gad2.fit = glm(PetOwner ~ Gad2, family = binomial, data = turk)
+kable(summary(Gad2.fit)$coef, digits = 2)
+
+
+```
+
+<div style="margin-bottom:100px;">
+### During the past two weeks, how often have you been bothered by worrying too much about different things?
+```{r Gad3, echo=F, warning=F} 
+library(dplyr)
+turk <- read_excel("2020-4-17 COVID_Raw_Data.xls")
+#turk$PetOwner<-as.factor(turk$PetOwner)
+turk$PetOwner <-
+  factor(
+    turk$PetOwner,
+    levels = c("0", "1"),
+    labels = c("Pets=No", "Pets=Yes")
+  )
+turk$Gad3 <-
+  factor(
+    turk$Gad3,
+    levels = c("1", "2", "3", "4", "5"),
+    labels = c(
+      "None of the time",
+      "A little of the time",
+      "Some of the time",
+      "Mostof the time",
+      "All of the time"
+    )
+  )
+
+#fct_explicit_na(turk$PetOwner, na_level = "(Missing)")
+tGad3 <- table(turk$PetOwner, turk$Gad3)
+kable(tGad3, caption = "Contingency Table for Gad3 responces and Pet Ownership")
+
+Gad3 <-
+  turk %>% group_by(PetOwner, Gad3) %>% summarise(Frequency = length(Gad3))
+ggplot(Gad3, aes(
+  fill = (PetOwner),
+  y = Frequency,
+  x = Gad3
+)) +
+  geom_bar(position = "dodge", stat = "identity") +
+  theme(
+    axis.text.x = element_text(
+      face = "bold",
+      color = "#993333",
+      size = 10,
+      angle = 90
+    ),
+    axis.text.y = element_text(
+      face = "bold",
+      color = "#993333",
+      size = 10,
+      angle = 0
+    )
+  ) +
+  ggtitle("Frequency distribution of Gad3 responces and Pet Ownership") +
+  labs(y = "Freqency of Responces", x = "Question:During the past two weeks, how often have you been bothered by worrying too much about different things??")
+
+Gad3.fit = glm(PetOwner ~ Gad3, family = binomial, data = turk)
+kable(summary(Gad3.fit)$coef, digits = 2)
+
+```
+
+<div style="margin-bottom:100px;">
+### During the past two weeks, how often have you had trouble relaxing?
+```{r Gad4, echo=F, warning=F} 
+library(dplyr)
+turk <- read_excel("2020-4-17 COVID_Raw_Data.xls")
+#turk$PetOwner<-as.factor(turk$PetOwner)
+turk$PetOwner <-
+  factor(
+    turk$PetOwner,
+    levels = c("0", "1"),
+    labels = c("Pets=No", "Pets=Yes")
+  )
+turk$Gad4 <-
+  factor(
+    turk$Gad4,
+    levels = c("1", "2", "3", "4", "5"),
+    labels = c(
+      "None of the time",
+      "A little of the time",
+      "Some of the time",
+      "Mostof the time",
+      "All of the time"
+    )
+  )
+
+#fct_explicit_na(turk$PetOwner, na_level = "(Missing)")
+tGad4 <- table(turk$PetOwner, turk$Gad4)
+kable(tGad4, caption = "Contingency Table for Gad4 responces and Pet Ownership")
+
+Gad4 <-
+  turk %>% group_by(PetOwner, Gad4) %>% summarise(Frequency = length(Gad4))
+ggplot(Gad4, aes(
+  fill = (PetOwner),
+  y = Frequency,
+  x = Gad4
+)) +
+  geom_bar(position = "dodge", stat = "identity") +
+  theme(
+    axis.text.x = element_text(
+      face = "bold",
+      color = "#993333",
+      size = 10,
+      angle = 90
+    ),
+    axis.text.y = element_text(
+      face = "bold",
+      color = "#993333",
+      size = 10,
+      angle = 0
+    )
+  ) +
+  ggtitle("Frequency distribution of Gad4 responces and Pet Ownership") +
+  labs(y = "Freqency of Responces", x = "Question: During the past two weeks, how often have you had trouble relaxing??")
+
+Gad4.fit = glm(PetOwner ~ Gad4, family = binomial, data = turk)
+kable(summary(Gad4.fit)$coef, digits = 2)
+```
+
+<div style="margin-bottom:100px;">
+### During the past two weeks, how often have you had trouble relaxing?
+```{r Gad5, echo=F, warning=F} 
+library(dplyr)
+turk <- read_excel("2020-4-17 COVID_Raw_Data.xls")
+#turk$PetOwner<-as.factor(turk$PetOwner)
+turk$PetOwner <-
+  factor(
+    turk$PetOwner,
+    levels = c("0", "1"),
+    labels = c("Pets=No", "Pets=Yes")
+  )
+turk$Gad5 <-
+  factor(
+    turk$Gad5,
+    levels = c("1", "2", "3", "4", "5"),
+    labels = c(
+      "None of the time",
+      "A little of the time",
+      "Some of the time",
+      "Mostof the time",
+      "All of the time"
+    )
+  )
+
+#fct_explicit_na(turk$PetOwner, na_level = "(Missing)")
+tGad5 <- table(turk$PetOwner, turk$Gad5)
+kable(tGad5, caption = "Contingency Table for Gad5 responces and Pet Ownership")
+
+Gad5 <-
+  turk %>% group_by(PetOwner, Gad5) %>% summarise(Frequency = length(Gad5))
+ggplot(Gad5, aes(
+  fill = (PetOwner),
+  y = Frequency,
+  x = Gad5
+)) +
+  geom_bar(position = "dodge", stat = "identity") +
+  theme(
+    axis.text.x = element_text(
+      face = "bold",
+      color = "#993333",
+      size = 10,
+      angle = 90
+    ),
+    axis.text.y = element_text(
+      face = "bold",
+      color = "#993333",
+      size = 10,
+      angle = 0
+    )
+  ) +
+  ggtitle("Frequency distribution of Gad5 responces and Pet Ownership") +
+  labs(y = "Freqency of Responces", x = "Question: During the past two weeks, how often have you had trouble relaxing??")
+Gad5.fit = glm(PetOwner ~ Gad5, family = binomial, data = turk)
+kable(summary(Gad5.fit)$coef, digits = 2)
+
+```
+
+<div style="margin-bottom:100px;">
+### During the past two weeks, how often have you become easily annoyed or irritable??
+```{r Gad6, echo=F, warning=F} 
+library(dplyr)
+turk <- read_excel("2020-4-17 COVID_Raw_Data.xls")
+#turk$PetOwner<-as.factor(turk$PetOwner)
+turk$PetOwner <-
+  factor(
+    turk$PetOwner,
+    levels = c("0", "1"),
+    labels = c("Pets=No", "Pets=Yes")
+  )
+turk$Gad6 <-
+  factor(
+    turk$Gad6,
+    levels = c("1", "2", "3", "4", "5"),
+    labels = c(
+      "None of the time",
+      "A little of the time",
+      "Some of the time",
+      "Mostof the time",
+      "All of the time"
+    )
+  )
+
+#fct_explicit_na(turk$PetOwner, na_level = "(Missing)")
+tGad6 <- table(turk$PetOwner, turk$Gad6)
+kable(tGad6, caption = "Contingency Table for Gad6 responces and Pet Ownership")
+
+Gad6 <-
+  turk %>% group_by(PetOwner, Gad6) %>% summarise(Frequency = length(Gad6))
+ggplot(Gad6, aes(
+  fill = (PetOwner),
+  y = Frequency,
+  x = Gad6
+)) +
+  geom_bar(position = "dodge", stat = "identity") +
+  theme(
+    axis.text.x = element_text(
+      face = "bold",
+      color = "#993333",
+      size = 10,
+      angle = 90
+    ),
+    axis.text.y = element_text(
+      face = "bold",
+      color = "#993333",
+      size = 10,
+      angle = 0
+    )
+  ) +
+  ggtitle("Frequency distribution of Gad6 responces and Pet Ownership") +
+  labs(y = "Freqency of Responces", x = "Question: During the past two weeks, how often have you become easily annoyed or irritable?")
+Gad6.fit = glm(PetOwner ~ Gad6, family = binomial, data = turk)
+kable(summary(Gad6.fit)$coef, digits = 2)
+
+```
+
+<div style="margin-bottom:100px;">
+### During the past two weeks, how often have you been bothered by feeling afraid as if something awful might happen??
+```{r Gad7, echo=F, warning=F} 
+library(dplyr)
+turk <- read_excel("2020-4-17 COVID_Raw_Data.xls")
+#turk$PetOwner<-as.factor(turk$PetOwner)
+turk$PetOwner <-
+  factor(
+    turk$PetOwner,
+    levels = c("0", "1"),
+    labels = c("Pets=No", "Pets=Yes")
+  )
+turk$Gad7 <-
+  factor(
+    turk$Gad7,
+    levels = c("1", "2", "3", "4", "5"),
+    labels = c(
+      "None of the time",
+      "A little of the time",
+      "Some of the time",
+      "Mostof the time",
+      "All of the time"
+    )
+  )
+
+#fct_explicit_na(turk$PetOwner, na_level = "(Missing)")
+tGad7 <- table(turk$PetOwner, turk$Gad7)
+kable(tGad7, caption = "Contingency Table for Gad7 responces and Pet Ownership")
+
+Gad7 <-
+  turk %>% group_by(PetOwner, Gad7) %>% summarise(Frequency = length(Gad7))
+ggplot(Gad7, aes(
+  fill = (PetOwner),
+  y = Frequency,
+  x = Gad7
+)) +
+  geom_bar(position = "dodge", stat = "identity") +
+  theme(
+    axis.text.x = element_text(
+      face = "bold",
+      color = "#993333",
+      size = 10,
+      angle = 90
+    ),
+    axis.text.y = element_text(
+      face = "bold",
+      color = "#993333",
+      size = 10,
+      angle = 0
+    )
+  ) +
+  ggtitle("Frequency distribution of Gad7 responces and Pet Ownership") +
+  labs(y = "Freqency of Responces", x = "Question:During the past two weeks, how often have you been bothered by feeling afraid as if something awful might happen?")
+
+Gad7.fit = glm(PetOwner ~ Gad7, family = binomial, data = turk)
+kable(summary(Gad7.fit)$coef, digits = 2)
+
+```
+
+<div style="margin-bottom:100px;">
+### Paying attention?
+```{r Q66, echo=F, warning=F} 
+library(dplyr)
+turk <- read_excel("2020-4-17 COVID_Raw_Data.xls")
+#turk$PetOwner<-as.factor(turk$PetOwner)
+turk$PetOwner <-
+  factor(
+    turk$PetOwner,
+    levels = c("0", "1"),
+    labels = c("Pets=No", "Pets=Yes")
+  )
+turk$Q66 <-
+  factor(
+    turk$Q66,
+    levels = c("1", "2", "3", "4", "5"),
+    labels = c(
+      "None of the time",
+      "A little of the time",
+      "Some of the time",
+      "Mostof the time",
+      "All of the time"
+    )
+  )
+
+#fct_explicit_na(turk$PetOwner, na_level = "(Missing)")
+tQ66 <- table(turk$PetOwner, turk$Q66)
+kable(tQ66, caption = "Contingency Table for Q66 responces and Pet Ownership")
+
+Q66 <-
+  turk %>% group_by(PetOwner, Q66) %>% summarise(Frequency = length(Q66))
+ggplot(Q66, aes(
+  fill = (PetOwner),
+  y = Frequency,
+  x = Q66
+)) +
+  geom_bar(position = "dodge", stat = "identity") +
+  theme(
+    axis.text.x = element_text(
+      face = "bold",
+      color = "#993333",
+      size = 10,
+      angle = 90
+    ),
+    axis.text.y = element_text(
+      face = "bold",
+      color = "#993333",
+      size = 10,
+      angle = 0
+    )
+  ) +
+  ggtitle("Frequency distribution of Q66 responces and Pet Ownership") +
+  labs(y = "Freqency of Responces", x = "Question:Paying Attention")
+
+```
+
+<div style="margin-bottom:100px;">
+### During the past two weeks, how often did you feel you lack companionship??
+```{r Lonely1, echo=F, warning=F} 
+library(dplyr)
+turk <- read_excel("2020-4-17 COVID_Raw_Data.xls")
+#turk$PetOwner<-as.factor(turk$PetOwner)
+turk$PetOwner <-
+  factor(
+    turk$PetOwner,
+    levels = c("0", "1"),
+    labels = c("Pets=No", "Pets=Yes")
+  )
+turk$Lonely1 <-
+  factor(
+    turk$Lonely1,
+    levels = c("1", "2", "3", "4", "5"),
+    labels = c(
+      "None of the time",
+      "A little of the time",
+      "Some of the time",
+      "Mostof the time",
+      "All of the time"
+    )
+  )
+
+#fct_explicit_na(turk$PetOwner, na_level = "(Missing)")
+tLonely1 <- table(turk$PetOwner, turk$Lonely1)
+kable(tLonely1, caption = "Contingency Table for Lonely1 responces and Pet Ownership")
+
+Lonely1 <-
+  turk %>% group_by(PetOwner, Lonely1) %>% summarise(Frequency = length(Lonely1))
+ggplot(Lonely1, aes(
+  fill = (PetOwner),
+  y = Frequency,
+  x = Lonely1
+)) +
+  geom_bar(position = "dodge", stat = "identity") +
+  theme(
+    axis.text.x = element_text(
+      face = "bold",
+      color = "#993333",
+      size = 10,
+      angle = 90
+    ),
+    axis.text.y = element_text(
+      face = "bold",
+      color = "#993333",
+      size = 10,
+      angle = 0
+    )
+  ) +
+  ggtitle("Frequency distribution of Lonely1 responces and Pet Ownership") +
+  labs(y = "Freqency of Responces", x = "Question: During the past two weeks, how often did you feel you lack companionship?")
+Lonely1.fit = glm(PetOwner ~ Lonely1, family = binomial, data = turk)
+kable(summary(Lonely1.fit)$coef, digits = 2)
+
+```
+
+<div style="margin-bottom:100px;">
+### During the past two weeks, how often did you feel left out??
+```{r Lonely2, echo=F, warning=F} 
+library(dplyr)
+turk <- read_excel("2020-4-17 COVID_Raw_Data.xls")
+#turk$PetOwner<-as.factor(turk$PetOwner)
+turk$PetOwner <- factor(turk$PetOwner, levels = c("0","1"), labels = c("Pets=No", "Pets=Yes"))
+turk$Lonely2 <- factor(turk$Lonely2, levels = c("1","2", "3","4","5"), labels = c("None of the time", "A little of the time","Some of the time", "Mostof the time", "All of the time"))
+
+#fct_explicit_na(turk$PetOwner, na_level = "(Missing)")
+tLonely2 <- table(turk$PetOwner, turk$Lonely2)
+kable(tLonely2, caption = "Contingency Table for Lonely2 responces and Pet Ownership")
+
+Lonely2 <-turk %>%group_by(PetOwner, Lonely2)%>%summarise(Frequency =length(Lonely2)) 
+ggplot(Lonely2, aes(fill= (PetOwner), y=Frequency, x=Lonely2)) + 
+geom_bar(position="dodge", stat="identity") +
+theme(axis.text.x = element_text(face="bold", color="#993333", 
+                           size=10, angle=90),
+          axis.text.y = element_text(face="bold", color="#993333", 
+                           size=10, angle=0)) +
+ggtitle("Frequency distribution of Lonely2 responces and Pet Ownership") +
+labs(y="Freqency of Responces", x = "Question:During the past two weeks, how often did you feel left out?")
+
+Lonely2.fit=glm(PetOwner~Lonely1,family=binomial,data=turk)
+kable(summary(Lonely2.fit)$coef, digits=2)
+
+```
+
+<div style="margin-bottom:100px;">
+### During the past two weeks, how often did you feel isolated from others?
+```{r Lonely3, echo=F, warning=F} 
+library(dplyr)
+turk <- read_excel("2020-4-17 COVID_Raw_Data.xls")
+#turk$PetOwner<-as.factor(turk$PetOwner)
+turk$PetOwner <- factor(turk$PetOwner, levels = c("0","1"), labels = c("Pets=No", "Pets=Yes"))
+turk$Lonely3 <- factor(turk$Lonely3, levels = c("1","2", "3","4","5"), labels = c("None of the time", "A little of the time","Some of the time", "Mostof the time", "All of the time"))
+
+#fct_explicit_na(turk$PetOwner, na_level = "(Missing)")
+tLonely3 <- table(turk$PetOwner, turk$Lonely3)
+kable(tLonely3, caption = "Contingency Table for Lonely3 responces and Pet Ownership")
+
+Lonely3 <-turk %>%group_by(PetOwner, Lonely3)%>%summarise(Frequency =length(Lonely3)) 
+ggplot(Lonely3, aes(fill= (PetOwner), y=Frequency, x=Lonely3)) + 
+geom_bar(position="dodge", stat="identity") +
+theme(axis.text.x = element_text(face="bold", color="#993333", 
+                           size=10, angle=90),
+          axis.text.y = element_text(face="bold", color="#993333", 
+                           size=10, angle=0)) +
+ggtitle("Frequency distribution of Lonely3 responces and Pet Ownership") +
+labs(y="Freqency of Responces", x = "Question:During the past two weeks, how often did you feel isolated from others")
+
+Lonely3.fit=glm(PetOwner~Lonely3,family=binomial,data=turk)
+kable(summary(Lonely3.fit)$coef, digits=2)
+
+```
+
+#### Risk questions
+
+<div style="margin-bottom:100px;">
+### RISK 1: In your opinion, how likely is it that you will contract COVID-19?        ?
+```{r Risk1, echo=F, warning=F} 
+library(dplyr)
+turk <- read_excel("2020-4-17 COVID_Raw_Data.xls")
+#turk$PetOwner<-as.factor(turk$PetOwner)
+turk$PetOwner <- factor(turk$PetOwner, levels = c("0","1"), labels = c("Pets=No", "Pets=Yes"))
+turk$Risk1 <- factor(turk$Risk1, levels = c("1","2", "3","4","5","6", "7"), labels = c("Extremely unlikely", "Moderately unlikely","Slightly unlikely", "Neither likely nor unlikely", "Slightly likely", "Moderately likely", "Extremely likely"))
+
+
+#fct_explicit_na(turk$PetOwner, na_level = "(Missing)")
+tRisk1 <- table(turk$PetOwner, turk$Risk1)
+kable(tRisk1, caption = "Contingency Table for Risk1 responces and Pet Ownership")
+
+Risk1 <-turk %>%group_by(PetOwner, Risk1)%>%summarise(Frequency =length(Risk1)) 
+ggplot(Risk1, aes(fill= (PetOwner), y=Frequency, x=Risk1)) + 
+geom_bar(position="dodge", stat="identity") +
+theme(axis.text.x = element_text(face="bold", color="#993333", 
+                           size=10, angle=90),
+          axis.text.y = element_text(face="bold", color="#993333", 
+                           size=10, angle=0)) +
+ggtitle("Frequency distribution of Risk1 responces and Pet Ownership") +
+labs(y="Freqency of Responces", x = "Question:During the past two weeks, how often did you feel left out?")
+
+Risk1.fit=glm(PetOwner~Risk1,family=binomial,data=turk)
+kable(summary(Risk1.fit)$coef, digits=2)
+
+```
+
+<div style="margin-bottom:100px;">
+### RISK 2: How serious do you think COVID-19 would be if you contracted it?        ?
+```{r Risk2, echo=F, warning=F} 
+library(dplyr)
+turk <- read_excel("2020-4-17 COVID_Raw_Data.xls")
+#turk$PetOwner<-as.factor(turk$PetOwner)
+turk$PetOwner <- factor(turk$PetOwner, levels = c("0","1"), labels = c("Pets=No", "Pets=Yes"))
+turk$Risk2 <- factor(turk$Risk2, levels = c("1","2", "3","4","5"), labels = c("Not at all", "Slightly","Moderately", "Very", "Extremely"))
+
+#fct_explicit_na(turk$PetOwner, na_level = "(Missing)")
+tRisk2 <- table(turk$PetOwner, turk$Risk2)
+kable(tRisk2, caption = "Contingency Table for Risk2 responces and Pet Ownership")
+
+Risk2 <-turk %>%group_by(PetOwner, Risk2)%>%summarise(Frequency =length(Risk2)) 
+ggplot(Risk2, aes(fill= (PetOwner), y=Frequency, x=Risk2)) + 
+geom_bar(position="dodge", stat="identity") +
+theme(axis.text.x = element_text(face="bold", color="#993333", 
+                           size=10, angle=90),
+          axis.text.y = element_text(face="bold", color="#993333", 
+                           size=10, angle=0)) +
+ggtitle("Frequency distribution of Risk2 responces and Pet Ownership") +
+labs(y="Freqency of Responces", x = "Question:How serious do you think COVID-19 would be if you contracted it?")
+
+Risk2.fit=glm(PetOwner~Risk2,family=binomial,data=turk)
+kable(summary(Risk2.fit)$coef, digits=2)
+
+```
+
+<div style="margin-bottom:100px;">
+### RISK 3: How concerned are you about the COVID-19??        ?
+```{r Risk3, echo=F, warning=F} 
+library(dplyr)
+library(xtable)
+turk <- read_excel("2020-4-17 COVID_Raw_Data.xls")
+#turk$PetOwner<-as.factor(turk$PetOwner)
+turk$PetOwner <-
+  factor(
+    turk$PetOwner,
+    levels = c("0", "1"),
+    labels = c("Pets=No", "Pets=Yes")
+  )
+turk$Risk3 <-
+  factor(
+    turk$Risk3,
+    levels = c("1", "2", "3", "4", "5"),
+    labels = c("Not at all", "Slightly", "Moderately", "Very", "Extremely")
+  )
+
+#fct_explicit_na(turk$PetOwner, na_level = "(Missing)")
+tRisk3 <- table(turk$PetOwner, turk$Risk3)
+kable(tRisk3, caption = "Contingency Table for Risk3 responces and Pet Ownership")
+
+Risk3 <-
+  turk %>% group_by(PetOwner, Risk3) %>% summarise(Frequency = length(Risk3))
+ggplot(Risk3, aes(
+  fill = (PetOwner),
+  y = Frequency,
+  x = Risk3
+)) +
+  geom_bar(position = "dodge", stat = "identity") +
+  theme(
+    axis.text.x = element_text(
+      face = "bold",
+      color = "#993333",
+      size = 10,
+      angle = 90
+    ),
+    axis.text.y = element_text(
+      face = "bold",
+      color = "#993333",
+      size = 10,
+      angle = 0
+    )
+  ) +
+  ggtitle("Frequency distribution of Risk3 responces and Pet Ownership") +
+  labs(y = "Freqency of Responces", x = "Question: How concerned are you about the COVID-19??")
+
+Risk3.fit = glm(PetOwner ~ Risk3, family = binomial, data = turk)
+kable(summary(Risk3.fit)$coef, digits = 2)
+
+```
+
+<div style="margin-bottom:100px;">
+### Pets2: How long have you had this animal?        ?
+```{r Pets2, echo=F, warning=F} 
+library(dplyr)
+library(forcats)
+turk <- read_excel("2020-4-17 COVID_Raw_Data.xls")
+turk$PetOwner <-
+  factor(
+    turk$PetOwner,
+    levels = c("0", "1"),
+    labels = c("Pets=No", "Pets=Yes")
+  )
+turk$Risk2 <-
+  factor(
+    turk$Risk2,
+    levels = c("1", "2", "3", "4", "5"),
+    labels = c("Not at all", "Slightly", "Moderately", "Very", "Extremely"),
+    fct_explicit_na("Missing")
+  )
+turk$MostAttachTime <-
+  factor(
+    turk$MostAttachTime,
+    levels = c("1", "2", "3"),
+    labels = c("<1 month", "1-12 month", "more than 12 months"),
+    fct_explicit_na("Missing")
+  )
+turk$MostAttach <-
+  factor(
+    turk$MostAttach,
+    levels = c("1", "2", "3", "4", "5", "6", "7", "8"),
+    labels = c(
+      "Dog",
+      "Cat",
+      "Horse",
+      "Bird",
+      "Reptile",
+      "Small Mammal" ,
+      "Fish",
+      "Other"
+    )
+  )
+#fct_explicit_na(turk$MostAttach,"Missing")
+#fct_explicit_na(turk$PetOwner, na_level = "(Missing)")
+tPets2 <- table(turk$MostAttachTime, turk$MostAttach)
+kable(tPets2,
+      caption = "Contingency Table for length of ownership",
+      table.attr = "class=\"striped\"",
+      format = "html")
+# want to remove NA i.e. non pet owners.
+
+MostAttachTime <- turk %>%
+  dplyr::filter(PetOwner == "Pets=Yes") %>%
+  group_by(MostAttachTime, MostAttach) %>% summarise(Frequency = length(MostAttachTime))
+
+
+ggplot(MostAttachTime, aes(
+  fill = (MostAttach),
+  y = Frequency,
+  x = MostAttachTime
+)) +
+  geom_bar(position = "dodge", stat = "identity") +
+  geom_text(aes(label = Frequency),
+            position = position_dodge(width = 0.9),
+            vjust = -0.25) +
+  theme(
+    axis.text.x = element_text(
+      face = "bold",
+      color = "#993333",
+      size = 10,
+      angle = 0
+    ),
+    axis.text.y = element_text(
+      face = "bold",
+      color = "#993333",
+      size = 10,
+      angle = 45
+    )
+  ) +
+  ggtitle("Frequency distribution of ownership time  by pet") +
+  labs(y = "Freqency of Responces", x = "Question: How long have you owned your pet?")
+
+```
+
+<div style="margin-bottom:100px;">
+### Compliance: How long have you had this animal?        
+```{r Compliance, echo=F, warning=F} 
+library(dplyr)
+turk <- read_excel("2020-4-17 COVID_Raw_Data.xls")
+turk$PetOwner <-
+  factor(
+    turk$PetOwner,
+    levels = c("0", "1"),
+    labels = c("Pets=No", "Pets=Yes")
+  )
+turk$Compliance <-
+  factor(turk$Compliance,
+         levels = c("0", "1"),
+         labels = c("No", "Yes"))
+turk$MostAttach <-
+  factor(
+    turk$MostAttach,
+    levels = c("1", "2", "3", "4", "5", "6", "7", "8"),
+    labels = c(
+      "Dog",
+      "Cat",
+      "Horse",
+      "Bird",
+      "Reptile",
+      "Small Mammal" ,
+      "Fish",
+      "Other"
+    )
+  )
+#turk$MostAttach<-factor(turk$MostAttach, levels = c("1","2","3","4","5","6","7","8"), labels = c("Dog", "Cat", "Horse","Other", "Other", "Other" , "Other", "Other"))
+
+tCompliance <- table(turk$Compliance, turk$MostAttach)
+kable(tCompliance, caption = "Contingency Table for All Pets and Quarantine Compliance")
+
+Compliance <- turk %>%
+  dplyr::filter(MostAttach == "Dog" | MostAttach == "Cat") %>%
+  group_by(Compliance, MostAttach) %>%
+  summarise(Frequency = length(Compliance))
+
+ggplot(Compliance, aes(
+  fill = (MostAttach),
+  y = Frequency,
+  x = Compliance
+)) +
+  geom_bar(position = "dodge", stat = "identity") +
+  theme(
+    axis.text.x = element_text(
+      face = "bold",
+      color = "#993333",
+      size = 10,
+      angle = 90
+    ),
+    axis.text.y = element_text(
+      face = "bold",
+      color = "#993333",
+      size = 10,
+      angle = 0
+    )
+  ) +
+  ggtitle("Frequency distribution of ownership time  by pet") +
+  labs(y = "Freqency of Responces", x = "Question:How has your complcaince been?")
+
+ggplot(Compliance, aes(
+  fill = (Compliance),
+  y = Frequency,
+  x = MostAttach
+)) +
+  geom_bar(position = "fill", stat = "identity") +
+  theme(
+    axis.text.x = element_text(
+      face = "bold",
+      color = "#993333",
+      size = 10,
+      angle = 90
+    ),
+    axis.text.y = element_text(
+      face = "bold",
+      color = "#993333",
+      size = 10,
+      angle = 0
+    )
+  ) +
+  #geom_text(aes(label=Frequency), position=position_dodge(width=0.9), vjust=-0.25)+
+  ggtitle("Frequency distribution of ownership time  by pet") +
+  labs(y = "Freqency of Responces", x = "Question:How has your complcaince been?")
+
+Compliance.fit = glm(Compliance ~ MostAttach, family = binomial, data =
+                       turk)
+kable(summary(Compliance.fit)$coef, digits = 2)
+
+```
+
+<div style="margin-bottom:100px;">
+### Interact: Has COVID-19 affected your normal activities and interactions with your pet/companion animal(s)?       
+```{r Interact, echo=F, warning=F} 
+library(dplyr)
+turk <- read_excel("2020-4-17 COVID_Raw_Data.xls")
+turk$PetOwner <-
+  factor(
+    turk$PetOwner,
+    levels = c("0", "1"),
+    labels = c("Pets=No", "Pets=Yes")
+  )
+turk$Interact <-
+  factor(turk$Interact,
+         levels = c("0", "1"),
+         labels = c("No", "Yes"))
+turk$MostAttach <-
+  factor(
+    turk$MostAttach,
+    levels = c("1", "2", "3", "4", "5", "6", "7", "8"),
+    labels = c(
+      "Dog",
+      "Cat",
+      "Horse",
+      "Bird",
+      "Reptile",
+      "Small Mammal" ,
+      "Fish",
+      "Other"
+    )
+  )
+#turk$MostAttach<-factor(turk$MostAttach, levels = c("1","2","3","4","5","6","7","8"), labels = c("Dog", "Cat", "Horse","Other", "Other", "Other" , "Other", "Other"))
+
+tInteract <- table(turk$Interact, turk$MostAttach)
+kable(tCompliance, caption = "Contingency Table for All Pets and Interaction")
+
+Interact <- turk %>%
+  dplyr::filter(MostAttach == "Dog" | MostAttach == "Cat") %>%
+  group_by(Interact, MostAttach) %>%
+  summarise(Frequency = length(Interact))
+
+ggplot(Interact, aes(
+  fill = (MostAttach),
+  y = Frequency,
+  x = Interact
+)) +
+  geom_bar(position = "dodge", stat = "identity") +
+  geom_text(aes(label = Frequency),
+            position = position_dodge(width = 0.9),
+            vjust = -0.25) +
+  theme(
+    axis.text.x = element_text(
+      face = "bold",
+      color = "#993333",
+      size = 10,
+      angle = 90
+    ),
+    axis.text.y = element_text(
+      face = "bold",
+      color = "#993333",
+      size = 10,
+      angle = 0
+    )
+  ) +
+  ggtitle("Frequency distribution of Interaction by pet") +
+  labs(y = "Freqency of Responces", x = "Question:How has your complcaince been?")
+
+ggplot(Interact, aes(
+  fill = (Interact),
+  y = Frequency,
+  x = MostAttach
+)) +
+  geom_bar(position = "fill", stat = "identity") +
+  theme(
+    axis.text.x = element_text(
+      face = "bold",
+      color = "#993333",
+      size = 10,
+      angle = 90
+    ),
+    axis.text.y = element_text(
+      face = "bold",
+      color = "#993333",
+      size = 10,
+      angle = 0
+    )
+  ) +
+  #geom_text(aes(label=Frequency), position=position_dodge(width=0.9), vjust=-0.25)+
+  ggtitle("Frequency distribution of ownership time  by pet") +
+  labs(y = "Freqency of Responces", x = "Question: Has COVID-19 affected your normal activities and interactions with your pet/companion animal(s)")
+
+Interact.fit = glm(Interact ~ MostAttach, family = binomial, data =
+                       turk)
+kable(summary(Interact.fit)$coef, digits = 2)
+
+```
+
+<div style="margin-bottom:100px;">
+### Plans: Since the COVID-19 outbreak, have you made plans for caring for your pet/companion animal(s) should you become sick and unable to care for them?       
+```{r Plans, echo=F, warning=F} 
+library(dplyr)
+turk <- read_excel("2020-4-17 COVID_Raw_Data.xls")
+turk$PetOwner <-
+  factor(
+    turk$PetOwner,
+    levels = c("0", "1"),
+    labels = c("Pets=No", "Pets=Yes")
+  )
+turk$Plans <-
+  factor(turk$Plans,
+         levels = c("0", "1"),
+         labels = c("No", "Yes"))
+turk$MostAttach <-
+  factor(
+    turk$MostAttach,
+    levels = c("1", "2", "3", "4", "5", "6", "7", "8"),
+    labels = c(
+      "Dog",
+      "Cat",
+      "Horse",
+      "Bird",
+      "Reptile",
+      "Small Mammal" ,
+      "Fish",
+      "Other"
+    )
+  )
+#turk$MostAttach<-factor(turk$MostAttach, levels = c("1","2","3","4","5","6","7","8"), labels = c("Dog", "Cat", "Horse","Other", "Other", "Other" , "Other", "Other"))
+
+tPlans <- table(turk$Plans, turk$MostAttach)
+kable(tCompliance, caption = "Contingency Table for All Pets and Plans")
+
+Plans <- turk %>%
+  dplyr::filter(MostAttach == "Dog" | MostAttach == "Cat") %>%
+  group_by(Plans, MostAttach) %>%
+  summarise(Frequency = length(Plans))
+
+ggplot(Plans, aes(
+  fill = (MostAttach),
+  y = Frequency,
+  x = Plans
+)) +
+  geom_bar(position = "dodge", stat = "identity") +
+  geom_text(aes(label = Frequency),
+            position = position_dodge(width = 0.9),
+            vjust = -0.25) +
+  theme(
+    axis.text.x = element_text(
+      face = "bold",
+      color = "#993333",
+      size = 10,
+      angle = 90
+    ),
+    axis.text.y = element_text(
+      face = "bold",
+      color = "#993333",
+      size = 10,
+      angle = 0
+    )
+  ) +
+  ggtitle("Frequency distribution of Plans by pet") +
+  labs(y = "Frequency of Responces", x = "QPlans")
+
+ggplot(Plans, aes(
+  fill = (Plans),
+  y = Frequency,
+  x = MostAttach
+)) +
+  geom_bar(position = "fill", stat = "identity") +
+  theme(
+    axis.text.x = element_text(
+      face = "bold",
+      color = "#993333",
+      size = 10,
+      angle = 90
+    ),
+    axis.text.y = element_text(
+      face = "bold",
+      color = "#993333",
+      size = 10,
+      angle = 0
+    )
+  ) +
+  #geom_text(aes(label=Frequency), position=position_dodge(width=0.9), vjust=-0.25)+
+  ggtitle("Frequency distribution of ownership time  by pet") +
+  labs(y = "Freqency of Responces", x = "Since the COVID-19 outbreak, have you made plans for caring for your pet/companion animal(s) should you become sick and unable to care for them?" )
+
+Plans.fit = glm(Plans ~ MostAttach, family = binomial, data =
+                       turk)
+kable(summary(Plans.fit)$coef, digits = 2)
+
+```
+
+<div style="margin-bottom:100px;">
+### Concern: Overall, how concerned are you about your ability to care for your pets/companion animal(s)?       
+```{r Concern, echo=F, warning=F} 
+library(dplyr)
+turk <- read_excel("2020-4-17 COVID_Raw_Data.xls")
+turk$PetOwner <-
+  factor(
+    turk$PetOwner,
+    levels = c("0", "1"),
+    labels = c("Pets=No", "Pets=Yes")
+  )
+turk$Concern <-
+  factor(turk$Concern,
+         levels = c("1", "2","3","4","5"),
+         labels = c("Not at all concerned", "A little concerned", "Moderately concerened", "Very concerned", "Extremely concerned"))
+
+
+turk$MostAttach <-
+  factor(
+    turk$MostAttach,
+    levels = c("1", "2", "3", "4", "5", "6", "7", "8"),
+    labels = c(
+      "Dog",
+      "Cat",
+      "Horse",
+      "Bird",
+      "Reptile",
+      "Small Mammal" ,
+      "Fish",
+      "Other"
+    )
+  )
+#turk$MostAttach<-factor(turk$MostAttach, levels = c("1","2","3","4","5","6","7","8"), labels = c("Dog", "Cat", "Horse","Other", "Other", "Other" , "Other", "Other"))
+
+tPlans <- table(turk$Concern, turk$MostAttach)
+kable(tCompliance, caption = "Contingency Table for All Pets and Concerns")
+
+Concern <- turk %>%
+  dplyr::filter(MostAttach == "Dog" | MostAttach == "Cat") %>%
+  group_by(Concern, MostAttach) %>%
+  summarise(Frequency = length(Concern))
+
+ggplot(Concern, aes(
+  fill = (MostAttach),
+  y = Frequency,
+  x = Concern
+)) +
+  geom_bar(position = "dodge", stat = "identity") +
+  geom_text(aes(label = Frequency),
+            position = position_dodge(width = 0.9),
+            vjust = -0.25) +
+  theme(
+    axis.text.x = element_text(
+      face = "bold",
+      color = "#993333",
+      size = 10,
+      angle = 90
+    ),
+    axis.text.y = element_text(
+      face = "bold",
+      color = "#993333",
+      size = 10,
+      angle = 0
+    )
+  ) +
+  ggtitle("Frequency distribution of Concerns by pet") +
+  labs(y = "Frequency of Responces", x = "Concerns")
+
+ggplot(Concern, aes(
+  fill = (Concern),
+  y = Frequency,
+  x = MostAttach
+)) +
+  geom_bar(position = "fill", stat = "identity") +
+  theme(
+    axis.text.x = element_text(
+      face = "bold",
+      color = "#993333",
+      size = 10,
+      angle = 90
+    ),
+    axis.text.y = element_text(
+      face = "bold",
+      color = "#993333",
+      size = 10,
+      angle = 0
+    )
+  ) +
+  #geom_text(aes(label=Frequency), position=position_dodge(width=0.9), vjust=-0.25)+
+  ggtitle("Frequency distribution of ownership time  by pet") +
+  labs(y = "Freqency of Responces", x = "Since the COVID-19 outbreak, have you made plans for caring for your pet/companion animal(s) should you become sick and unable to care for them?" )
+
+Concern.fit = glm(Concern ~ MostAttach, family = binomial, data =
+                       turk)
+kable(summary(Concern.fit)$coef, digits = 2)
+
+```
+
+
+<div style="margin-bottom:100px;">
+### CCAS1: My pet/animal provides me with companionship?       
+```{r CCAS1, echo=F, warning=F} 
+library(dplyr)
+turk <- read_excel("2020-4-17 COVID_Raw_Data.xls")
+turk$PetOwner <-
+  factor(
+    turk$PetOwner,
+    levels = c("0", "1"),
+    labels = c("Pets=No", "Pets=Yes")
+  )
+turk$CCAS1 <-
+  factor(turk$CCAS1,
+         levels = c("1", "2","3","4","5","6","7"),
+         labels = c(
+           "Strongly disagree",
+           "Disagree" ,
+           "Somewhat disagree",
+           "Neither agree nor disagree", 
+          "Somewhat agree", 
+          "Agree", 
+          "Strongly agree" 
+))
+
+
+turk$MostAttach <-
+  factor(
+    turk$MostAttach,
+    levels = c("1", "2", "3", "4", "5", "6", "7", "8"),
+    labels = c(
+      "Dog",
+      "Cat",
+      "Horse",
+      "Bird",
+      "Reptile",
+      "Small Mammal" ,
+      "Fish",
+      "Other"
+    )
+  )
+#turk$MostAttach<-factor(turk$MostAttach, levels = c("1","2","3","4","5","6","7","8"), labels = c("Dog", "Cat", "Horse","Other", "Other", "Other" , "Other", "Other"))
+
+tCCAS1 <- table(turk$CCAS1, turk$MostAttach)
+kable(tCCAS1, caption = "CCAS1: My pet/animal provides me with companionship?")
+
+CCAS1 <- turk %>%
+  dplyr::filter(MostAttach == "Dog" | MostAttach == "Cat") %>%
+  group_by(CCAS1, MostAttach) %>%
+  summarise(Frequency = length(CCAS1))
+
+ggplot(CCAS1, aes(
+  fill = (MostAttach),
+  y = Frequency,
+  x = CCAS1
+)) +
+  geom_bar(position = "dodge", stat = "identity") +
+  geom_text(aes(label = Frequency),
+            position = position_dodge(width = 0.9),
+            vjust = -0.25) +
+  theme(
+    axis.text.x = element_text(
+      face = "bold",
+      color = "#993333",
+      size = 10,
+      angle = 90
+    ),
+    axis.text.y = element_text(
+      face = "bold",
+      color = "#993333",
+      size = 10,
+      angle = 0
+    )
+  ) +
+  ggtitle("Frequency distribution of CCAS1 by pet") +
+  labs(y = "Frequency of Responces", x = "My pet/animal provides me with companionship?")
+
+ggplot(CCAS1, aes(
+  fill = (CCAS1),
+  y = Frequency,
+  x = MostAttach
+)) +
+  geom_bar(position = "fill", stat = "identity") +
+  theme(
+    axis.text.x = element_text(
+      face = "bold",
+      color = "#993333",
+      size = 10,
+      angle = 90
+    ),
+    axis.text.y = element_text(
+      face = "bold",
+      color = "#993333",
+      size = 10,
+      angle = 0
+    )
+  ) +
+  #geom_text(aes(label=Frequency), position=position_dodge(width=0.9), vjust=-0.25)+
+  ggtitle("Frequency distribution of ownership time  by pet") +
+  labs(y = "Freqency of Responces", x = "My pet/animal provides me with companionship?" )
+
+CCAS1.fit = glm(CCAS1 ~ MostAttach, family = binomial, data =
+                       turk)
+kable(summary(CCAS1.fit)$coef, digits = 2)
+
+```
+
+
+
+
+
+
+
+
+
+<div style="margin-bottom:100px;">
+
+
+
+
+### CCAS2: Having a pet/animal gives me something to care for?  
+```{r CCAS2, echo=F, warning=F} 
+library(dplyr)
+turk <- read_excel("2020-4-17 COVID_Raw_Data.xls")
+turk$PetOwner <-
+  factor(
+    turk$PetOwner,
+    levels = c("0", "1"),
+    labels = c("Pets=No", "Pets=Yes")
+  )
+turk$CCAS2 <-
+  factor(turk$CCAS2,
+         levels = c("1", "2","3","4","5","6","7"),
+         labels = c(
+           "Strongly disagree",
+           "Disagree" ,
+           "Somewhat disagree",
+           "Neither agree nor disagree", 
+          "Somewhat agree", 
+          "Agree", 
+          "Strongly agree" 
+))
+
+
+turk$MostAttach <-
+  factor(
+    turk$MostAttach,
+    levels = c("1", "2", "3", "4", "5", "6", "7", "8"),
+    labels = c(
+      "Dog",
+      "Cat",
+      "Horse",
+      "Bird",
+      "Reptile",
+      "Small Mammal" ,
+      "Fish",
+      "Other"
+    )
+  )
+#turk$MostAttach<-factor(turk$MostAttach, levels = c("1","2","3","4","5","6","7","8"), labels = c("Dog", "Cat", "Horse","Other", "Other", "Other" , "Other", "Other"))
+
+tCCAS2 <- table(turk$CCAS2, turk$MostAttach)
+kable(tCCAS2, caption = "CCAS2: Having a pet/animal gives me something to care for")
+
+CCAS2 <- turk %>%
+  dplyr::filter(MostAttach == "Dog" | MostAttach == "Cat") %>%
+  group_by(CCAS2, MostAttach) %>%
+  summarise(Frequency = length(CCAS2))
+
+ggplot(CCAS2, aes(
+  fill = (MostAttach),
+  y = Frequency,
+  x = CCAS2
+)) +
+  geom_bar(position = "dodge", stat = "identity") +
+  geom_text(aes(label = Frequency),
+            position = position_dodge(width = 0.9),
+            vjust = -0.25) +
+  theme(
+    axis.text.x = element_text(
+      face = "bold",
+      color = "#993333",
+      size = 10,
+      angle = 90
+    ),
+    axis.text.y = element_text(
+      face = "bold",
+      color = "#993333",
+      size = 10,
+      angle = 0
+    )
+  ) +
+  ggtitle("Frequency distribution of CCAS2 by pet") +
+  labs(y = "Frequency of Responces", x = "Having a pet/animal gives me something to care for")
+
+ggplot(CCAS2, aes(
+  fill = (CCAS2),
+  y = Frequency,
+  x = MostAttach
+)) +
+  geom_bar(position = "fill", stat = "identity") +
+  theme(
+    axis.text.x = element_text(
+      face = "bold",
+      color = "#993333",
+      size = 10,
+      angle = 90
+    ),
+    axis.text.y = element_text(
+      face = "bold",
+      color = "#993333",
+      size = 10,
+      angle = 0
+    )
+  ) +
+  #geom_text(aes(label=Frequency), position=position_dodge(width=0.9), vjust=-0.25)+
+  ggtitle("Frequency distribution of ownership time  by pet") +
+  labs(y = "Freqency of Responces", x = "Having a pet/animal gives me something to care for?" )
+
+CCAS2.fit = glm(CCAS2 ~ MostAttach, family = binomial, data =
+                       turk)
+kable(summary(CCAS2.fit)$coef, digits = 2)
+
+```
+
+
+
+
+
+
+
+# {Wave 2 specific questions}
+<style>
+div.blue { background-color:#e6f0ff; border-radius: 5px; padding: 20px;}
+</style>
+<div class = "blue">
+turk2 <- read_excel("2020-5-6 COVID_Raw_Data.xlsx")
+
+## {Basic Description of the Participants}
+
+```{r turk2figur1,echo = FALSE, message=FALSE, warning=FALSE}
+library(readxl)
+library(dplyr)
+library(ggplot2)
+library(knitr)
+library(xtable)
+#importing the data and arranging properly
+turk2 <- read_excel("2020-5-6 COVID_Raw_Data.xlsx")
+numResponces<-nrow(turk2)
+#frequency grouped by outcomes and year
+###Table 1
+pets <- turk2 %>% group_by(PetOwner)
+## of reported pets
+numPET <-  turk2 %>%
+            dplyr::filter(PetOwner == 1) %>%
+            tally() %>%
+            .[,"n"]
+numDOG <-  turk2 %>%
+            dplyr::filter(PetOwner == 1, PetTypes_1 != 0) %>%
+            tally() %>%
+            .[,"n"]
+numCAT <-  turk2 %>%
+            dplyr::filter(PetOwner == 1, PetTypes_2 != 0) %>%
+            tally() %>%
+            .[,"n"]
+numHORSE <-  turk2 %>%
+            dplyr::filter(PetOwner == 1, PetTypes_3 != 0) %>%
+            tally() %>%
+            .[,"n"]
+numBIRD <-  turk2 %>%
+            dplyr::filter(PetOwner == 1, PetTypes_4 != 0) %>%
+            tally() %>%
+            .[,"n"]
+numREPTILE <-  turk2 %>%
+            dplyr::filter(PetOwner == 1, PetTypes_5 != 0) %>%
+            tally() %>%
+            .[,"n"]
+numSM <-  turk2 %>%
+            dplyr::filter(PetOwner == 1, PetTypes_6 != 0) %>%
+            tally() %>%
+            .[,"n"]
+numFISH <-  turk2 %>%
+            dplyr::filter(PetOwner == 1, PetTypes_7 != 0) %>%
+            tally() %>%
+            .[,"n"]
+numOTHER <-  turk2 %>%
+            dplyr::filter(PetOwner == 1, PetTypes_8 != 0) %>%
+            tally() %>%
+            .[,"n"]
+numDOGCAT <-  turk2 %>%
+            dplyr::filter(PetOwner == 1, PetTypes_1 != 0, PetTypes_2 !=0) %>%
+            tally() %>%
+            .[,"n"]
+propPET<-round((numPET/numResponces)*100,1)
+propDOG<-round((numDOG/numPET)*100,1)
+propCAT<-round((numCAT/numPET)*100,1)
+propHORSE<-round((numHORSE/numPET)*100,1)
+propFISH<-round((numFISH/numPET)*100,1)
+propREPTILE<-round((numREPTILE/numPET)*100,1)
+propOTHER<-round((numOTHER/numPET)*100,1)
+propSM<-round((numSM/numPET)*100,1)
+propDOGCAT<-round((numDOGCAT/numPET)*100,1)
+```
+<style>
+div.blue { background-color:#e6f0ff; border-radius: 5px; padding: 20px;}
+</style>
+<div class = "blue">
+
+The survey was conducted in April 2020, and `r numResponces` responces were obtained. Of these `r numResponces` respondents, `r numPET` reporting owning pets (`r propPET`%).  Of the pet owners,  `r numDOG` (`r propDOG`%) reported owning dogs, `r numCAT`(`r propCAT`%) reported owning cats, `r numHORSE`(`r propHORSE`%) reported owning horses, `r numREPTILE` (`r propREPTILE`%) reporting owning reptiles, `r numSM` (`r propSM`%) reporting owning small mammals, `r numFISH` (`r propFISH`%) reporting owning fish and `r numOTHER`(`r propOTHER`%) reported owning other animals. `r numDOGCAT` reported owning both cats and dogs.  
+
+```{r turk2tables, results="asis"}
+library(xtable)
+library(broom)
+X <- summary(turk2$age)
+X <- tidy(X)
+kable(X,
+      align = "rrrrr",
+      caption = "Summary characteritics for age.",
+      digits = 0)
+mean_age<-round(X[4],0)
+med_age<-round(X[3],0)
+#col.names = c("min", "Quart1", "med", "mean", "Qurt 3", "max"),
+
+```
+<style>
+div.blue { background-color:#e6f0ff; border-radius: 5px; padding: 20px;}
+</style>
+<div class = "blue">
+
+The mean age of particiants was `r mean_age` and the median was `r med_age`.
+
+## Kessler responces for the participants
+
+### During the past two weeks, how often did you feel tired for no good reason?
+
+```{r turk2kessler1, echo=F, warning=F} 
+library(dplyr)
+
+library(forcats)
+turk2 <- read_excel("2020-5-6 COVID_Raw_Data.xlsx")
+turk2$PetOwner <-
+  factor(
+    turk2$PetOwner,
+    levels = c("0", "1"),
+    labels = c("Pets=No", "Pets=Yes")
+  )
+turk2$Kessler1 <-
+  factor(
+    turk2$Kessler1,
+    levels = c("1", "2", "3", "4", "5"),
+    labels = c(
+      "None of the time",
+      "A little of the time",
+      "Some of the time",
+      "Mostof the time",
+      "All of the time"
+    )
+  )
+
+#turk2$PetOwner <- factor(turk2$PetOwner, levels = c("0","1"), labels = c("Pets=No", "Pets=Yes")) %>% fct_explicit_na("Missing")
+#$turk2$Kessler1 <- factor(turk2$Kessler1, levels = c("1","2", "3","4","5"), labels = c("None of the time", "A little of the time","Some of the time", "Mostof the time", "All of the time")) %>% fct_explicit_na("Missing")
+Kessler1 <-
+  turk2 %>% group_by(PetOwner, Kessler1) %>% summarise(Frequency = length(Kessler1))
+t1 <- table(turk2$PetOwner, turk2$Kessler1)
+kable(t1, caption = "Contingency table for Kessler 1 responces and Pet Ownership")
+ggplot(Kessler1, aes(
+  fill = (PetOwner),
+  y = Frequency,
+  x = Kessler1
+)) +
+  geom_bar(position = "dodge", stat = "identity") +
+  geom_text(aes(label = Frequency),
+            position = position_dodge(width = 0.9),
+            vjust = -0.25) +
+  theme(
+    axis.text.x = element_text(
+      face = "bold",
+      color = "#993333",
+      size = 10,
+      angle = 90
+    ),
+    axis.text.y = element_text(
+      face = "bold",
+      color = "#993333",
+      size = 10,
+      angle = 0
+    )
+  ) +
+  ggtitle("Frequency distribution of Kessler 1 responces and Pet Ownership") +
+  labs(y = "Freqency of Responces", x = "Question: During the past two weeks, how often did you feel tired for no good reason?")
+
+ggplot(Kessler1, aes(
+  fill = (PetOwner),
+  y = Frequency,
+  x = Kessler1
+)) +
+  geom_bar(position = "fill", stat = "identity") +
+  theme(
+    axis.text.x = element_text(
+      face = "bold",
+      color = "#993333",
+      size = 10,
+      angle = 90
+    ),
+    axis.text.y = element_text(
+      face = "bold",
+      color = "#993333",
+      size = 10,
+      angle = 0
+    )
+  ) +
+  ggtitle("Frequency distribution of Kessler 1 responces and Pet Ownership") +
+  labs(y = "Freqency of Responces", x = "Question: During the past two weeks, how often did you feel tired for no good reason?")
+#making tables
+
+
+ggplot(Kessler1, aes(
+  fill = (Kessler1),
+  y = Frequency,
+  x = PetOwner
+)) +
+  geom_bar(position = "fill", stat = "identity") +
+  theme(
+    axis.text.x = element_text(
+      face = "bold",
+      color = "#993333",
+      size = 10,
+      angle = 90
+    ),
+    axis.text.y = element_text(
+      face = "bold",
+      color = "#993333",
+      size = 10,
+      angle = 0
+    )
+  ) +
+  ggtitle("Frequency distribution of Kessler 1 responces and Pet Ownership") +
+  labs(y = "Freqency of Responces", x = "Question: During the past two weeks, how often did you feel tired for no good reason?")
+#making tables
+
+
+Kessler1.fit = glm(PetOwner ~ Kessler1, family = binomial, data = turk2)
+kable(summary(Kessler1.fit)$coef, digits = 2)
+
+```
+
+<div style="margin-bottom:100px;">
+###  "During the past two weeks, how often did you feel nervous? 
+```{r turk2kessler2, echo=F, warning=F} 
+library(dplyr)
+turk2 <- read_excel("2020-5-6 COVID_Raw_Data.xlsx")
+#turk2$PetOwner<-as.factor(turk2$PetOwner)
+turk2$PetOwner <-
+  factor(
+    turk2$PetOwner,
+    levels = c("0", "1"),
+    labels = c("Pets=No", "Pets=Yes")
+  )
+turk2$Kessler2 <-
+  factor(
+    turk2$Kessler2,
+    levels = c("1", "2", "3", "4", "5"),
+    labels = c(
+      "None of the time",
+      "A little of the time",
+      "Some of the time",
+      "Mostof the time",
+      "All of the time"
+    )
+  )
+#fct_explicit_na(turk2$PetOwner, na_level = "(Missing)")
+
+t2 <- table(turk2$PetOwner, turk2$Kessler2)
+kable(t2, caption = "Contingency Table for Kessler 2 responces and Pet Ownership")
+
+Kessler2 <-
+  turk2 %>% group_by(PetOwner, Kessler2) %>% summarise(Frequency = length(Kessler2))
+
+ggplot(Kessler2, aes(
+  fill = (PetOwner),
+  y = Frequency,
+  x = Kessler2
+)) +
+  geom_bar(position = "dodge", stat = "identity") +
+  geom_text(aes(label = Frequency),
+            position = position_dodge(width = 0.9),
+            vjust = -0.25) +
+  theme(
+    axis.text.x = element_text(
+      face = "bold",
+      color = "#993333",
+      size = 10,
+      angle = 90
+    ),
+    axis.text.y = element_text(
+      face = "bold",
+      color = "#993333",
+      size = 10,
+      angle = 0
+    )
+  ) +
+  ggtitle("Frequency distribution of Kessler 2 responces and Pet Ownership") +
+  labs(y = "Freqency of Responces", x = "During the past two weeks, how often did you feel nervous?")
+
+ggplot(Kessler2, aes(
+  fill = (PetOwner),
+  y = Frequency,
+  x = Kessler2
+)) +
+  geom_bar(position = "fill", stat = "identity") +
+  theme(
+    axis.text.x = element_text(
+      face = "bold",
+      color = "#993333",
+      size = 10,
+      angle = 90
+    ),
+    axis.text.y = element_text(
+      face = "bold",
+      color = "#993333",
+      size = 10,
+      angle = 0
+    )
+  ) +
+  ggtitle("Frequency distribution of Kessler 2 responces and Pet Ownership") +
+  labs(y = "Freqency of Responces", x = "During the past two weeks, how often did you feel nervous?")
+#making tables
+
+ggplot(Kessler2, aes(
+  fill = (Kessler2),
+  y = Frequency,
+  x = PetOwner
+)) +
+  geom_bar(position = "fill", stat = "identity") +
+  theme(
+    axis.text.x = element_text(
+      face = "bold",
+      color = "#993333",
+      size = 10,
+      angle = 90
+    ),
+    axis.text.y = element_text(
+      face = "bold",
+      color = "#993333",
+      size = 10,
+      angle = 0
+    )
+  ) +
+  ggtitle("Frequency distribution of Kessler 2 responces and Pet Ownership") +
+  labs(y = "Freqency of Responces", x = "Question: During the past two weeks, how often did you feel nervous?")
+
+Kessler2.fit = glm(PetOwner ~ Kessler2, family = binomial, data = turk2)
+kable(summary(Kessler2.fit)$coef, digits = 2)
+```
+
+<div style="margin-bottom:100px;">
+## "During the past two weeks, how often did you feel so nervous that nothing could calm you down??"
+```{r turk2kessler3, echo=F, warning=F} 
+library(dplyr)
+turk2 <- read_excel("2020-5-6 COVID_Raw_Data.xlsx")
+#turk2$PetOwner<-as.factor(turk2$PetOwner)
+turk2$PetOwner <-
+  factor(
+    turk2$PetOwner,
+    levels = c("0", "1"),
+    labels = c("Pets=No", "Pets=Yes")
+  )
+turk2$Kessler3 <-
+  factor(
+    turk2$Kessler3,
+    levels = c("1", "2", "3", "4", "5"),
+    labels = c(
+      "None of the time",
+      "A little of the time",
+      "Some of the time",
+      "Mostof the time",
+      "All of the time"
+    )
+  )
+
+#fct_explicit_na(turk2$PetOwner, na_level = "(Missing)")
+t3 <- table(turk2$PetOwner, turk2$Kessler3)
+kable(t3, caption = "Contingency Table for Kessler 3 responces and Pet Ownership")
+
+Kessler3 <-
+  turk2 %>% group_by(PetOwner, Kessler3) %>% summarise(Frequency = length(Kessler3))
+ggplot(Kessler3, aes(
+  fill = (PetOwner),
+  y = Frequency,
+  x = Kessler3
+)) +
+  geom_bar(position = "dodge", stat = "identity") +
+  geom_text(aes(label = Frequency),
+            position = position_dodge(width = 0.9),
+            vjust = -0.25) +
+  theme(
+    axis.text.x = element_text(
+      face = "bold",
+      color = "#993333",
+      size = 10,
+      angle = 90
+    ),
+    axis.text.y = element_text(
+      face = "bold",
+      color = "#993333",
+      size = 10,
+      angle = 0
+    )
+  ) +
+  ggtitle("Frequency distribution of Kessler 3 responces and Pet Ownership") +
+  labs(y = "Freqency of Responces", x = "During the past two weeks, how often \ did you feel so nervous that nothing could calm you down??")
+
+
+ggplot(Kessler3, aes(
+  fill = (PetOwner),
+  y = Frequency,
+  x = Kessler3
+)) +
+  geom_bar(position = "fill", stat = "identity") +
+  theme(
+    axis.text.x = element_text(
+      face = "bold",
+      color = "#993333",
+      size = 10,
+      angle = 90
+    ),
+    axis.text.y = element_text(
+      face = "bold",
+      color = "#993333",
+      size = 10,
+      angle = 0
+    )
+  ) +
+  ggtitle("Frequency distribution of Kessler 3 responces and Pet Ownership") +
+  labs(y = "Freqency of Responces", x = "During the past two weeks, how often \ did you feel so nervous that nothing could calm you down??")
+
+
+
+ggplot(Kessler3, aes(
+  fill = (Kessler3),
+  y = Frequency,
+  x = PetOwner
+)) +
+  geom_bar(position = "fill", stat = "identity") +
+  theme(
+    axis.text.x = element_text(
+      face = "bold",
+      color = "#993333",
+      size = 10,
+      angle = 90
+    ),
+    axis.text.y = element_text(
+      face = "bold",
+      color = "#993333",
+      size = 10,
+      angle = 0
+    )
+  ) +
+  ggtitle("Frequency distribution of Kessler 3 responces and Pet Ownership") +
+  labs(y = "Freqency of Responces", x = "During the past two weeks, how often \ did you feel so nervous that nothing could calm you down??")
+
+
+Kessler3.fit = glm(PetOwner ~ Kessler3, family = binomial, data = turk2)
+kable(summary(Kessler3.fit)$coef, digits = 2)
+
+```
+
+<div style="margin-bottom:100px;">
+## "During the past two weeks, how often did you feel hopeless?"
+```{r turk2kessler4, echo=F, warning=F} 
+library(dplyr)
+turk2 <- read_excel("2020-5-6 COVID_Raw_Data.xlsx")
+#turk2$PetOwner<-as.factor(turk2$PetOwner)
+turk2$PetOwner <-
+  factor(
+    turk2$PetOwner,
+    levels = c("0", "1"),
+    labels = c("Pets=No", "Pets=Yes")
+  )
+turk2$Kessler4 <-
+  factor(
+    turk2$Kessler4,
+    levels = c("1", "2", "3", "4", "5"),
+    labels = c(
+      "None of the time",
+      "A little of the time",
+      "Some of the time",
+      "Mostof the time",
+      "All of the time"
+    )
+  )
+
+#fct_explicit_na(turk2$PetOwner, na_level = "(Missing)")
+t4 <- table(turk2$PetOwner, turk2$Kessler4)
+kable(t4, caption = "Contingency Table for Kessler 4 responces and Pet Ownership")
+
+Kessler4 <-
+  turk2 %>% group_by(PetOwner, Kessler4) %>% summarise(Frequency = length(Kessler4))
+ggplot(Kessler4, aes(
+  fill = (PetOwner),
+  y = Frequency,
+  x = Kessler4
+)) +
+  geom_bar(position = "dodge", stat = "identity") +
+  geom_text(aes(label = Frequency),
+            position = position_dodge(width = 0.9),
+            vjust = -0.25) +
+  theme(
+    axis.text.x = element_text(
+      face = "bold",
+      color = "#993333",
+      size = 10,
+      angle = 90
+    ),
+    axis.text.y = element_text(
+      face = "bold",
+      color = "#993333",
+      size = 10,
+      angle = 0
+    )
+  ) +
+  ggtitle("Frequency distribution of Kessler 4 responces and Pet Ownership") +
+  labs(y = "Freqency of Responces", x = "During the past two weeks, how often did you feel hopeless?")
+
+ggplot(Kessler4, aes(
+  fill = (PetOwner),
+  y = Frequency,
+  x = Kessler4
+)) +
+  geom_bar(position = "fill", stat = "identity") +
+  theme(
+    axis.text.x = element_text(
+      face = "bold",
+      color = "#993333",
+      size = 10,
+      angle = 90
+    ),
+    axis.text.y = element_text(
+      face = "bold",
+      color = "#993333",
+      size = 10,
+      angle = 0
+    )
+  ) +
+  ggtitle("Frequency distribution of Kessler 4 responces and Pet Ownership") +
+  labs(y = "Freqency of Responces", x = "During the past two weeks, how often did you feel hopeless?")
+
+ggplot(Kessler4, aes(
+  fill = (Kessler4),
+  y = Frequency,
+  x = PetOwner
+)) +
+  geom_bar(position = "fill", stat = "identity") +
+  theme(
+    axis.text.x = element_text(
+      face = "bold",
+      color = "#993333",
+      size = 10,
+      angle = 90
+    ),
+    axis.text.y = element_text(
+      face = "bold",
+      color = "#993333",
+      size = 10,
+      angle = 0
+    )
+  ) +
+  ggtitle("Frequency distribution of Kessler 4 responces and Pet Ownership") +
+  labs(y = "Freqency of Responces", x = "During the past two weeks, how often did you feel hopeless?")
+
+Kessler4.fit = glm(PetOwner ~ Kessler4, family = binomial, data = turk2)
+kable(summary(Kessler4.fit)$coef, digits = 2)
+
+```
+
+<div style="margin-bottom:100px;">
+## *"During the past two weeks, how often did you feel restless or fidgety?"*
+```{r turk2kessler5, echo=F, warning=F} 
+library(dplyr)
+turk2 <- read_excel("2020-5-6 COVID_Raw_Data.xlsx")
+#turk2$PetOwner<-as.factor(turk2$PetOwner)
+turk2$PetOwner <-
+  factor(
+    turk2$PetOwner,
+    levels = c("0", "1"),
+    labels = c("Pets=No", "Pets=Yes")
+  )
+turk2$Kessler5 <-
+  factor(
+    turk2$Kessler5,
+    levels = c("1", "2", "3", "4", "5"),
+    labels = c(
+      "None of the time",
+      "A little of the time",
+      "Some of the time",
+      "Mostof the time",
+      "All of the time"
+    )
+  )
+
+#fct_explicit_na(turk2$PetOwner, na_level = "(Missing)")
+t5 <- table(turk2$PetOwner, turk2$Kessler5)
+kable(t5, caption = "Contingency Table for Kessler 5 responces and Pet Ownership")
+
+Kessler5 <-
+  turk2 %>% group_by(PetOwner, Kessler5) %>% summarise(Frequency = length(Kessler5))
+ggplot(Kessler5, aes(
+  fill = (PetOwner),
+  y = Frequency,
+  x = Kessler5
+)) +
+  geom_bar(position = "dodge", stat = "identity") +
+  geom_text(aes(label = Frequency),
+            position = position_dodge(width = 0.9),
+            vjust = -0.25) +
+  theme(
+    axis.text.x = element_text(
+      face = "bold",
+      color = "#993333",
+      size = 10,
+      angle = 90
+    ),
+    axis.text.y = element_text(
+      face = "bold",
+      color = "#993333",
+      size = 10,
+      angle = 0
+    )
+  ) +
+  ggtitle("Frequency distribution of Kessler 5 responces and Pet Ownership") +
+  labs(y = "Freqency of Responces", x = "Question: During the past two weeks, how often did you feel restless or fidgety")
+
+ggplot(Kessler5, aes(
+  fill = (PetOwner),
+  y = Frequency,
+  x = Kessler5
+)) +
+  geom_bar(position = "fill", stat = "identity") +
+  theme(
+    axis.text.x = element_text(
+      face = "bold",
+      color = "#993333",
+      size = 10,
+      angle = 90
+    ),
+    axis.text.y = element_text(
+      face = "bold",
+      color = "#993333",
+      size = 10,
+      angle = 0
+    )
+  ) +
+  ggtitle("Frequency distribution of Kessler 5 responces and Pet Ownership") +
+  labs(y = "Freqency of Responces", x = "Question: During the past two weeks, how often did you feel restless or fidgety")
+
+ggplot(Kessler5, aes(
+  fill = (Kessler5),
+  y = Frequency,
+  x = PetOwner
+)) +
+  geom_bar(position = "fill", stat = "identity") +
+  theme(
+    axis.text.x = element_text(
+      face = "bold",
+      color = "#993333",
+      size = 10,
+      angle = 90
+    ),
+    axis.text.y = element_text(
+      face = "bold",
+      color = "#993333",
+      size = 10,
+      angle = 0
+    )
+  ) +
+  ggtitle("Frequency distribution of Kessler 5 responces and Pet Ownership") +
+  labs(y = "Freqency of Responces", x = "Question: During the past two weeks, how often did you feel restless or fidgety")
+
+Kessler5.fit = glm(PetOwner ~ Kessler5, family = binomial, data = turk2)
+kable(summary(Kessler5.fit)$coef, digits = 2)
+
+```
+
+<div style="margin-bottom:100px;">
+## *"During the past two weeks, how often did you feel so restless that you could not sit still?"*
+```{r turk2kessler6, echo=F, warning=F} 
+library(dplyr)
+turk2 <- read_excel("2020-5-6 COVID_Raw_Data.xlsx")
+#turk2$PetOwner<-as.factor(turk2$PetOwner)
+turk2$PetOwner <-
+  factor(
+    turk2$PetOwner,
+    levels = c("0", "1"),
+    labels = c("Pets=No", "Pets=Yes")
+  )
+turk2$Kessler6 <-
+  factor(
+    turk2$Kessler6,
+    levels = c("1", "2", "3", "4", "5"),
+    labels = c(
+      "None of the time",
+      "A little of the time",
+      "Some of the time",
+      "Mostof the time",
+      "All of the time"
+    )
+  )
+
+#fct_explicit_na(turk2$PetOwner, na_level = "(Missing)")
+t6 <- table(turk2$PetOwner, turk2$Kessler6)
+kable(t6, caption = "Contingency Table for Kessler 6 responces and Pet Ownership")
+
+Kessler6 <-
+  turk2 %>% group_by(PetOwner, Kessler6) %>% summarise(Frequency = length(Kessler6))
+ggplot(Kessler6, aes(
+  fill = (PetOwner),
+  y = Frequency,
+  x = Kessler6
+)) +
+  geom_bar(position = "dodge", stat = "identity") +
+  geom_text(aes(label = Frequency),
+            position = position_dodge(width = 0.9),
+            vjust = -0.25) +
+  theme(
+    axis.text.x = element_text(
+      face = "bold",
+      color = "#993333",
+      size = 10,
+      angle = 90
+    ),
+    axis.text.y = element_text(
+      face = "bold",
+      color = "#993333",
+      size = 10,
+      angle = 0
+    )
+  ) +
+  ggtitle("Frequency distribution of Kessler 6 responces and Pet Ownership") +
+  labs(y = "Freqency of Responces", x = "Question: During the past two weeks, how often did you feel so restless that you could not sit still")
+
+ggplot(Kessler6, aes(
+  fill = (PetOwner),
+  y = Frequency,
+  x = Kessler6
+)) +
+  geom_bar(position = "fill", stat = "identity") +
+  theme(
+    axis.text.x = element_text(
+      face = "bold",
+      color = "#993333",
+      size = 10,
+      angle = 90
+    ),
+    axis.text.y = element_text(
+      face = "bold",
+      color = "#993333",
+      size = 10,
+      angle = 0
+    )
+  ) +
+  ggtitle("Frequency distribution of Kessler 6 responces and Pet Ownership") +
+  labs(y = "Freqency of Responces", x = "Question: During the past two weeks, how often did you feel so restless that you could not sit still")
+
+ggplot(Kessler6, aes(
+  fill = (Kessler6),
+  y = Frequency,
+  x = PetOwner
+)) +
+  geom_bar(position = "fill", stat = "identity") +
+  theme(
+    axis.text.x = element_text(
+      face = "bold",
+      color = "#993333",
+      size = 10,
+      angle = 90
+    ),
+    axis.text.y = element_text(
+      face = "bold",
+      color = "#993333",
+      size = 10,
+      angle = 0
+    )
+  ) +
+  ggtitle("Frequency distribution of Kessler 6 responces and Pet Ownership") +
+  labs(y = "Freqency of Responces", x = "Question: During the past two weeks, how often did you feel so restless that you could not sit still")
+
+Kessler6.fit = glm(PetOwner ~ Kessler6, family = binomial, data = turk2)
+kable(summary(Kessler6.fit)$coef, digits = 2)
+
+```
+
+<div style="margin-bottom:100px;">
+### *"During the past two weeks, how often did you feel depressed??"*
+```{r turk2kessler7, echo=F, warning=F} 
+library(dplyr)
+turk2 <- read_excel("2020-5-6 COVID_Raw_Data.xlsx")
+#turk2$PetOwner<-as.factor(turk2$PetOwner)
+turk2$PetOwner <-
+  factor(
+    turk2$PetOwner,
+    levels = c("0", "1"),
+    labels = c("Pets=No", "Pets=Yes")
+  )
+turk2$Kessler7 <-
+  factor(
+    turk2$Kessler7,
+    levels = c("1", "2", "3", "4", "5"),
+    labels = c(
+      "None of the time",
+      "A little of the time",
+      "Some of the time",
+      "Mostof the time",
+      "All of the time"
+    )
+  )
+
+#fct_explicit_na(turk2$PetOwner, na_level = "(Missing)")
+t7 <- table(turk2$PetOwner, turk2$Kessler7)
+kable(t7, caption = "Contingency Table for Kessler 7 responces and Pet Ownership")
+
+Kessler7 <-
+  turk2 %>% group_by(PetOwner, Kessler7) %>% summarise(Frequency = length(Kessler7))
+ggplot(Kessler7, aes(
+  fill = (PetOwner),
+  y = Frequency,
+  x = Kessler7
+)) +
+  geom_bar(position = "dodge", stat = "identity") +
+  geom_text(aes(label = Frequency),
+            position = position_dodge(width = 0.9),
+            vjust = -0.25) +
+  theme(
+    axis.text.x = element_text(
+      face = "bold",
+      color = "#993333",
+      size = 10,
+      angle = 90
+    ),
+    axis.text.y = element_text(
+      face = "bold",
+      color = "#993333",
+      size = 10,
+      angle = 0
+    )
+  ) +
+  ggtitle("Frequency distribution of Kessler 7 responces and Pet Ownership") +
+  labs(y = "Freqency of Responces", x = "Question: During the past two weeks, how often did you feel depressed?")
+
+ggplot(Kessler7, aes(
+  fill = (PetOwner),
+  y = Frequency,
+  x = Kessler7
+)) +
+  geom_bar(position = "fill", stat = "identity") +
+  theme(
+    axis.text.x = element_text(
+      face = "bold",
+      color = "#993333",
+      size = 10,
+      angle = 90
+    ),
+    axis.text.y = element_text(
+      face = "bold",
+      color = "#993333",
+      size = 10,
+      angle = 0
+    )
+  ) +
+  ggtitle("Frequency distribution of Kessler 7 responces and Pet Ownership") +
+  labs(y = "Freqency of Responces", x = "Question: During the past two weeks, how often did you feel depressed?")
+
+ggplot(Kessler7, aes(
+  fill = (Kessler7),
+  y = Frequency,
+  x = PetOwner
+)) +
+  geom_bar(position = "fill", stat = "identity") +
+  theme(
+    axis.text.x = element_text(
+      face = "bold",
+      color = "#993333",
+      size = 10,
+      angle = 90
+    ),
+    axis.text.y = element_text(
+      face = "bold",
+      color = "#993333",
+      size = 10,
+      angle = 0
+    )
+  ) +
+  ggtitle("Frequency distribution of Kessler 7 responces and Pet Ownership") +
+  labs(y = "Freqency of Responces", x = "Question: During the past two weeks, how often did you feel depressed?")
+
+Kessler7.fit = glm(PetOwner ~ Kessler7, family = binomial, data = turk2)
+kable(summary(Kessler7.fit)$coef, digits = 2)
+```
+
+<div style="margin-bottom:100px;">
+### *"During the past two weeks, how often did you feel so depressed that nothing could cheer you up?"*
+```{r turk22kessler8, echo=F, warning=F} 
+library(dplyr)
+turk2 <- read_excel("2020-5-6 COVID_Raw_Data.xlsx")
+#turk2$PetOwner<-as.factor(turk2$PetOwner)
+turk2$PetOwner <- factor(turk2$PetOwner, levels = c("0","1"), labels = c("Pets=No", "Pets=Yes"))
+turk2$Kessler8 <- factor(turk2$Kessler8, levels = c("1","2", "3","4","5"), labels = c("None of the time", "A little of the time","Some of the time", "Mostof the time", "All of the time"))
+
+#fct_explicit_na(turk2$PetOwner, na_level = "(Missing)")
+t8 <- table(turk2$PetOwner, turk2$Kessler8)
+kable(t8, caption = "Contingency Table for Kessler 8 responces and Pet Ownership")
+
+Kessler8 <-turk2 %>%group_by(PetOwner, Kessler8)%>%summarise(Frequency =length(Kessler8)) 
+ggplot(Kessler8, aes(fill= (PetOwner), y=Frequency, x=Kessler8)) + 
+geom_bar(position="dodge", stat="identity") +
+  geom_text(aes(label = Frequency),
+            position = position_dodge(width = 0.9),
+            vjust = -0.25) +
+theme(axis.text.x = element_text(face="bold", color="#993333", 
+                           size=10, angle=90),
+          axis.text.y = element_text(face="bold", color="#993333", 
+                           size=10, angle=0)) +
+ggtitle("Frequency distribution of Kessler 8 responces and Pet Ownership") +
+labs(y="Freqency of Responces", x = "Question: During the past two weeks, how often did you / feel so depressed that nothing could cheer you up?")
+
+ggplot(Kessler8, aes(
+  fill = (PetOwner),
+  y = Frequency,
+  x = Kessler8
+)) +
+  geom_bar(position = "fill", stat = "identity") +
+  theme(
+    axis.text.x = element_text(
+      face = "bold",
+      color = "#993333",
+      size = 10,
+      angle = 90
+    ),
+    axis.text.y = element_text(
+      face = "bold",
+      color = "#993333",
+      size = 10,
+      angle = 0
+    )
+  ) +
+  ggtitle("Frequency distribution of Kessler 8 responces and Pet Ownership") +
+labs(y="Freqency of Responces", x = "Question: During the past two weeks, how often did you / feel so depressed that nothing could cheer you up?")
+
+ggplot(Kessler8, aes(
+  fill = (Kessler8),
+  y = Frequency,
+  x = PetOwner
+)) +
+  geom_bar(position = "fill", stat = "identity") +
+  theme(
+    axis.text.x = element_text(
+      face = "bold",
+      color = "#993333",
+      size = 10,
+      angle = 90
+    ),
+    axis.text.y = element_text(
+      face = "bold",
+      color = "#993333",
+      size = 10,
+      angle = 0
+    )
+  ) +
+  ggtitle("Frequency distribution of Kessler 8 responces and Pet Ownership") +
+labs(y="Freqency of Responces", x = "Question: During the past two weeks, how often did you / feel so depressed that nothing could cheer you up?")
+
+Kessler8.fit=glm(PetOwner~Kessler8,family=binomial,data=turk2)
+kable(summary(Kessler8.fit)$coef, digits=2)
+
+```
+
+<div style="margin-bottom:100px;">
+### *"During the past two weeks, how often did you feel that everything was an effort?"*
+```{r turk2kessler9, echo=F, warning=F} 
+library(dplyr)
+turk2 <- read_excel("2020-5-6 COVID_Raw_Data.xlsx")
+#turk2$PetOwner<-as.factor(turk2$PetOwner)
+turk2$PetOwner <- factor(turk2$PetOwner, levels = c("0","1"), labels = c("Pets=No", "Pets=Yes"))
+turk2$Kessler9 <- factor(turk2$Kessler9, levels = c("1","2", "3","4","5"), labels = c("None of the time", "A little of the time","Some of the time", "Mostof the time", "All of the time"))
+
+#fct_explicit_na(turk2$PetOwner, na_level = "(Missing)")
+t9 <- table(turk2$PetOwner, turk2$Kessler9)
+kable(t9, caption = "Contingency Table for Kessler 9 responces and Pet Ownership")
+
+Kessler9 <-turk2 %>%group_by(PetOwner, Kessler9)%>%summarise(Frequency =length(Kessler9)) 
+ggplot(Kessler9, aes(fill= (PetOwner), y=Frequency, x=Kessler9)) + 
+geom_bar(position="dodge", stat="identity") +
+theme(axis.text.x = element_text(face="bold", color="#993333", 
+                           size=10, angle=90),
+          axis.text.y = element_text(face="bold", color="#993333", 
+                           size=10, angle=0)) +
+ggtitle("Frequency distribution of Kessler 9 responces and Pet Ownership") +
+labs(y="Freqency of Responces", x = "Question: During the past two weeks, how often did you feel that everything was an effort??")
+
+
+ggplot(Kessler9, aes(
+  fill = (PetOwner),
+  y = Frequency,
+  x = Kessler9
+)) +
+  geom_bar(position = "fill", stat = "identity") +
+  theme(
+    axis.text.x = element_text(
+      face = "bold",
+      color = "#993333",
+      size = 10,
+      angle = 90
+    ),
+    axis.text.y = element_text(
+      face = "bold",
+      color = "#993333",
+      size = 10,
+      angle = 0
+    )
+  ) +
+  ggtitle("Frequency distribution of Kessler 9 responces and Pet Ownership") +
+labs(y="Freqency of Responces", x = "Question: During the past two weeks, how often did you feel that everything was an effort??")
+
+ggplot(Kessler9, aes(
+  fill = (Kessler9),
+  y = Frequency,
+  x = PetOwner
+)) +
+  geom_bar(position = "fill", stat = "identity") +
+  theme(
+    axis.text.x = element_text(
+      face = "bold",
+      color = "#993333",
+      size = 10,
+      angle = 90
+    ),
+    axis.text.y = element_text(
+      face = "bold",
+      color = "#993333",
+      size = 10,
+      angle = 0
+    )
+  ) +
+ggtitle("Frequency distribution of Kessler 9 responces and Pet Ownership") +
+labs(y="Freqency of Responces", x = "Question: During the past two weeks, how often did you feel that everything was an effort??")
+
+Kessler9.fit=glm(PetOwner~Kessler9,family=binomial,data=turk2)
+kable(summary(Kessler9.fit)$coef, digits=2)
+
+```
+
+<div style="margin-bottom:100px;">
+### *"During the past two weeks, how often did you feel worthless?"*
+
+```{r turk2kessler10, echo=F, warning=F} 
+library(dplyr)
+turk2 <- read_excel("2020-5-6 COVID_Raw_Data.xlsx")
+#turk2$PetOwner<-as.factor(turk2$PetOwner)
+turk2$PetOwner <- factor(turk2$PetOwner, levels = c("0","1"), labels = c("Pets=No", "Pets=Yes"))
+turk2$Kessler10 <- factor(turk2$Kessler10, levels = c("1","2", "3","4","5"), labels = c("None of the time", "A little of the time","Some of the time", "Mostof the time", "All of the time"))
+
+#fct_explicit_na(turk2$PetOwner, na_level = "(Missing)")
+t10 <- table(turk2$PetOwner, turk2$Kessler10)
+kable(t10, caption = "Contingency Table for Kessler 10 responces and Pet Ownership")
+
+Kessler10 <-turk2 %>%group_by(PetOwner, Kessler10)%>%summarise(Frequency =length(Kessler10)) 
+ggplot(Kessler10, aes(fill= (PetOwner), y=Frequency, x=Kessler10)) + 
+geom_bar(position="dodge", stat="identity") +
+theme(axis.text.x = element_text(face="bold", color="#993333", 
+                           size=10, angle=90),
+          axis.text.y = element_text(face="bold", color="#993333", 
+                           size=10, angle=0)) +
+ggtitle("Frequency distribution of Kessler 10 responces and Pet Ownership") +
+labs(y="Freqency of Responces", x = "Question: During the past two weeks, how often did you feel worthless??")
+
+
+ggplot(Kessler10, aes(
+  fill = (PetOwner),
+  y = Frequency,
+  x = Kessler10
+)) +
+  geom_bar(position = "fill", stat = "identity") +
+  theme(
+    axis.text.x = element_text(
+      face = "bold",
+      color = "#993333",
+      size = 10,
+      angle = 90
+    ),
+    axis.text.y = element_text(
+      face = "bold",
+      color = "#993333",
+      size = 10,
+      angle = 0
+    )
+  ) +
+ggtitle("Frequency distribution of Kessler 10 responces and Pet Ownership") +
+labs(y="Freqency of Responces", x = "Question: During the past two weeks, how often did you feel worthless??")
+
+ggplot(Kessler10, aes(
+  fill = (Kessler10),
+  y = Frequency,
+  x = PetOwner
+)) +
+  geom_bar(position = "fill", stat = "identity") +
+  theme(
+    axis.text.x = element_text(
+      face = "bold",
+      color = "#993333",
+      size = 10,
+      angle = 90
+    ),
+    axis.text.y = element_text(
+      face = "bold",
+      color = "#993333",
+      size = 10,
+      angle = 0
+    )
+  ) +
+ggtitle("Frequency distribution of Kessler 10 responces and Pet Ownership") +
+labs(y="Freqency of Responces", x = "Question: During the past two weeks, how often did you feel worthless??")
+
+Kessler10.fit=glm(PetOwner~Kessler10,family=binomial,data=turk2)
+kable(summary(Kessler10.fit)$coef, digits=2)
+
+```
+
+<div style="margin-bottom:100px;">
+### *"During the past two weeks, how often have you been bothered by feeling nervous, anxious or on edge?"*
+```{r turk2Gad1, echo=F, warning=F} 
+library(dplyr)
+turk2 <- read_excel("2020-5-6 COVID_Raw_Data.xlsx")
+#turk2$PetOwner<-as.factor(turk2$PetOwner)
+turk2$PetOwner <-
+  factor(
+    turk2$PetOwner,
+    levels = c("0", "1"),
+    labels = c("Pets=No", "Pets=Yes")
+  )
+turk2$Gad1 <-
+  factor(
+    turk2$Gad1,
+    levels = c("1", "2", "3", "4", "5"),
+    labels = c(
+      "None of the time",
+      "A little of the time",
+      "Some of the time",
+      "Mostof the time",
+      "All of the time"
+    )
+  )
+
+#fct_explicit_na(turk2$PetOwner, na_level = "(Missing)")
+tGad1 <- table(turk2$PetOwner, turk2$Gad1)
+kable(tGad1, caption = "Contingency Table for Gad1 responces and Pet Ownership")
+
+Gad1 <-
+  turk2 %>% group_by(PetOwner, Gad1) %>% summarise(Frequency = length(Gad1))
+ggplot(Gad1, aes(
+  fill = (PetOwner),
+  y = Frequency,
+  x = Gad1
+)) +
+  geom_bar(position = "dodge", stat = "identity") +
+  theme(
+    axis.text.x = element_text(
+      face = "bold",
+      color = "#993333",
+      size = 10,
+      angle = 90
+    ),
+    axis.text.y = element_text(
+      face = "bold",
+      color = "#993333",
+      size = 10,
+      angle = 0
+    )
+  ) +
+  ggtitle("Frequency distribution of Gad1 responces and Pet Ownership") +
+  labs(y = "Freqency of Responces", x = "Question: During the past two weeks, how often have you been bothered by feeling nervous, anxious or on edge?")
+Gad1.fit = glm(PetOwner ~ Gad1, family = binomial, data = turk2)
+kable(summary(Gad1.fit)$coef, digits = 2)
+
+```
+
+<div style="margin-bottom:100px;">
+### *"During the past two weeks, how often have you been bothered by not being able to stop or control worrying?"*
+
+```{r turk22Gad2, echo=F, warning=F} 
+library(dplyr)
+turk2 <- read_excel("2020-5-6 COVID_Raw_Data.xlsx")
+#turk2$PetOwner<-as.factor(turk2$PetOwner)
+turk2$PetOwner <-
+  factor(
+    turk2$PetOwner,
+    levels = c("0", "1"),
+    labels = c("Pets=No", "Pets=Yes")
+  )
+turk2$Gad2 <-
+  factor(
+    turk2$Gad2,
+    levels = c("1", "2", "3", "4", "5"),
+    labels = c(
+      "None of the time",
+      "A little of the time",
+      "Some of the time",
+      "Mostof the time",
+      "All of the time"
+    )
+  )
+
+#fct_explicit_na(turk2$PetOwner, na_level = "(Missing)")
+tGad2 <- table(turk2$PetOwner, turk2$Gad2)
+kable(tGad2, caption = "Contingency Table for Gad2 responces and Pet Ownership")
+
+Gad2 <-
+  turk2 %>% group_by(PetOwner, Gad2) %>% summarise(Frequency = length(Gad2))
+ggplot(Gad2, aes(
+  fill = (PetOwner),
+  y = Frequency,
+  x = Gad2
+)) +
+  geom_bar(position = "dodge", stat = "identity") +
+  theme(
+    axis.text.x = element_text(
+      face = "bold",
+      color = "#993333",
+      size = 10,
+      angle = 90
+    ),
+    axis.text.y = element_text(
+      face = "bold",
+      color = "#993333",
+      size = 10,
+      angle = 0
+    )
+  ) +
+  ggtitle("Frequency distribution of Gad2 responces and Pet Ownership") +
+  labs(y = "Freqency of Responces", x = "Question:During the past two weeks, how often have you been bothered by not being able to stop or control worrying?")
+Gad2.fit = glm(PetOwner ~ Gad2, family = binomial, data = turk2)
+kable(summary(Gad2.fit)$coef, digits = 2)
+
+
+```
+
+<div style="margin-bottom:100px;">
+### During the past two weeks, how often have you been bothered by worrying too much about different things?
+```{r turk22Gad3, echo=F, warning=F} 
+library(dplyr)
+turk2 <- read_excel("2020-5-6 COVID_Raw_Data.xlsx")
+#turk2$PetOwner<-as.factor(turk2$PetOwner)
+turk2$PetOwner <-
+  factor(
+    turk2$PetOwner,
+    levels = c("0", "1"),
+    labels = c("Pets=No", "Pets=Yes")
+  )
+turk2$Gad3 <-
+  factor(
+    turk2$Gad3,
+    levels = c("1", "2", "3", "4", "5"),
+    labels = c(
+      "None of the time",
+      "A little of the time",
+      "Some of the time",
+      "Mostof the time",
+      "All of the time"
+    )
+  )
+
+#fct_explicit_na(turk2$PetOwner, na_level = "(Missing)")
+tGad3 <- table(turk2$PetOwner, turk2$Gad3)
+kable(tGad3, caption = "Contingency Table for Gad3 responces and Pet Ownership")
+
+Gad3 <-
+  turk2 %>% group_by(PetOwner, Gad3) %>% summarise(Frequency = length(Gad3))
+ggplot(Gad3, aes(
+  fill = (PetOwner),
+  y = Frequency,
+  x = Gad3
+)) +
+  geom_bar(position = "dodge", stat = "identity") +
+  theme(
+    axis.text.x = element_text(
+      face = "bold",
+      color = "#993333",
+      size = 10,
+      angle = 90
+    ),
+    axis.text.y = element_text(
+      face = "bold",
+      color = "#993333",
+      size = 10,
+      angle = 0
+    )
+  ) +
+  ggtitle("Frequency distribution of Gad3 responces and Pet Ownership") +
+  labs(y = "Freqency of Responces", x = "Question:During the past two weeks, how often have you been bothered by worrying too much about different things??")
+
+Gad3.fit = glm(PetOwner ~ Gad3, family = binomial, data = turk2)
+kable(summary(Gad3.fit)$coef, digits = 2)
+
+```
+
+<div style="margin-bottom:100px;">
+### During the past two weeks, how often have you had trouble relaxing?
+```{r turk22Gad4, echo=F, warning=F} 
+library(dplyr)
+turk2 <- read_excel("2020-5-6 COVID_Raw_Data.xlsx")
+#turk2$PetOwner<-as.factor(turk2$PetOwner)
+turk2$PetOwner <-
+  factor(
+    turk2$PetOwner,
+    levels = c("0", "1"),
+    labels = c("Pets=No", "Pets=Yes")
+  )
+turk2$Gad4 <-
+  factor(
+    turk2$Gad4,
+    levels = c("1", "2", "3", "4", "5"),
+    labels = c(
+      "None of the time",
+      "A little of the time",
+      "Some of the time",
+      "Mostof the time",
+      "All of the time"
+    )
+  )
+
+#fct_explicit_na(turk2$PetOwner, na_level = "(Missing)")
+tGad4 <- table(turk2$PetOwner, turk2$Gad4)
+kable(tGad4, caption = "Contingency Table for Gad4 responces and Pet Ownership")
+
+Gad4 <-
+  turk2 %>% group_by(PetOwner, Gad4) %>% summarise(Frequency = length(Gad4))
+ggplot(Gad4, aes(
+  fill = (PetOwner),
+  y = Frequency,
+  x = Gad4
+)) +
+  geom_bar(position = "dodge", stat = "identity") +
+  theme(
+    axis.text.x = element_text(
+      face = "bold",
+      color = "#993333",
+      size = 10,
+      angle = 90
+    ),
+    axis.text.y = element_text(
+      face = "bold",
+      color = "#993333",
+      size = 10,
+      angle = 0
+    )
+  ) +
+  ggtitle("Frequency distribution of Gad4 responces and Pet Ownership") +
+  labs(y = "Freqency of Responces", x = "Question: During the past two weeks, how often have you had trouble relaxing??")
+
+Gad4.fit = glm(PetOwner ~ Gad4, family = binomial, data = turk2)
+kable(summary(Gad4.fit)$coef, digits = 2)
+```
+
+<div style="margin-bottom:100px;">
+### During the past two weeks, how often have you had trouble relaxing?
+```{r turk22Gad5, echo=F, warning=F} 
+library(dplyr)
+turk2 <- read_excel("2020-5-6 COVID_Raw_Data.xlsx")
+#turk2$PetOwner<-as.factor(turk2$PetOwner)
+turk2$PetOwner <-
+  factor(
+    turk2$PetOwner,
+    levels = c("0", "1"),
+    labels = c("Pets=No", "Pets=Yes")
+  )
+turk2$Gad5 <-
+  factor(
+    turk2$Gad5,
+    levels = c("1", "2", "3", "4", "5"),
+    labels = c(
+      "None of the time",
+      "A little of the time",
+      "Some of the time",
+      "Mostof the time",
+      "All of the time"
+    )
+  )
+
+#fct_explicit_na(turk2$PetOwner, na_level = "(Missing)")
+tGad5 <- table(turk2$PetOwner, turk2$Gad5)
+kable(tGad5, caption = "Contingency Table for Gad5 responces and Pet Ownership")
+
+Gad5 <-
+  turk2 %>% group_by(PetOwner, Gad5) %>% summarise(Frequency = length(Gad5))
+ggplot(Gad5, aes(
+  fill = (PetOwner),
+  y = Frequency,
+  x = Gad5
+)) +
+  geom_bar(position = "dodge", stat = "identity") +
+  theme(
+    axis.text.x = element_text(
+      face = "bold",
+      color = "#993333",
+      size = 10,
+      angle = 90
+    ),
+    axis.text.y = element_text(
+      face = "bold",
+      color = "#993333",
+      size = 10,
+      angle = 0
+    )
+  ) +
+  ggtitle("Frequency distribution of Gad5 responces and Pet Ownership") +
+  labs(y = "Freqency of Responces", x = "Question: During the past two weeks, how often have you had trouble relaxing??")
+Gad5.fit = glm(PetOwner ~ Gad5, family = binomial, data = turk2)
+kable(summary(Gad5.fit)$coef, digits = 2)
+
+```
+
+<div style="margin-bottom:100px;">
+### During the past two weeks, how often have you become easily annoyed or irritable??
+```{r turk22Gad6, echo=F, warning=F} 
+library(dplyr)
+turk2 <- read_excel("2020-5-6 COVID_Raw_Data.xlsx")
+#turk2$PetOwner<-as.factor(turk2$PetOwner)
+turk2$PetOwner <-
+  factor(
+    turk2$PetOwner,
+    levels = c("0", "1"),
+    labels = c("Pets=No", "Pets=Yes")
+  )
+turk2$Gad6 <-
+  factor(
+    turk2$Gad6,
+    levels = c("1", "2", "3", "4", "5"),
+    labels = c(
+      "None of the time",
+      "A little of the time",
+      "Some of the time",
+      "Mostof the time",
+      "All of the time"
+    )
+  )
+
+#fct_explicit_na(turk2$PetOwner, na_level = "(Missing)")
+tGad6 <- table(turk2$PetOwner, turk2$Gad6)
+kable(tGad6, caption = "Contingency Table for Gad6 responces and Pet Ownership")
+
+Gad6 <-
+  turk2 %>% group_by(PetOwner, Gad6) %>% summarise(Frequency = length(Gad6))
+ggplot(Gad6, aes(
+  fill = (PetOwner),
+  y = Frequency,
+  x = Gad6
+)) +
+  geom_bar(position = "dodge", stat = "identity") +
+  theme(
+    axis.text.x = element_text(
+      face = "bold",
+      color = "#993333",
+      size = 10,
+      angle = 90
+    ),
+    axis.text.y = element_text(
+      face = "bold",
+      color = "#993333",
+      size = 10,
+      angle = 0
+    )
+  ) +
+  ggtitle("Frequency distribution of Gad6 responces and Pet Ownership") +
+  labs(y = "Freqency of Responces", x = "Question: During the past two weeks, how often have you become easily annoyed or irritable?")
+Gad6.fit = glm(PetOwner ~ Gad6, family = binomial, data = turk2)
+kable(summary(Gad6.fit)$coef, digits = 2)
+
+```
+
+<div style="margin-bottom:100px;">
+### During the past two weeks, how often have you been bothered by feeling afraid as if something awful might happen??
+```{r turk22Gad7, echo=F, warning=F} 
+library(dplyr)
+turk2 <- read_excel("2020-5-6 COVID_Raw_Data.xlsx")
+#turk2$PetOwner<-as.factor(turk2$PetOwner)
+turk2$PetOwner <-
+  factor(
+    turk2$PetOwner,
+    levels = c("0", "1"),
+    labels = c("Pets=No", "Pets=Yes")
+  )
+turk2$Gad7 <-
+  factor(
+    turk2$Gad7,
+    levels = c("1", "2", "3", "4", "5"),
+    labels = c(
+      "None of the time",
+      "A little of the time",
+      "Some of the time",
+      "Mostof the time",
+      "All of the time"
+    )
+  )
+
+#fct_explicit_na(turk2$PetOwner, na_level = "(Missing)")
+tGad7 <- table(turk2$PetOwner, turk2$Gad7)
+kable(tGad7, caption = "Contingency Table for Gad7 responces and Pet Ownership")
+
+Gad7 <-
+  turk2 %>% group_by(PetOwner, Gad7) %>% summarise(Frequency = length(Gad7))
+ggplot(Gad7, aes(
+  fill = (PetOwner),
+  y = Frequency,
+  x = Gad7
+)) +
+  geom_bar(position = "dodge", stat = "identity") +
+  theme(
+    axis.text.x = element_text(
+      face = "bold",
+      color = "#993333",
+      size = 10,
+      angle = 90
+    ),
+    axis.text.y = element_text(
+      face = "bold",
+      color = "#993333",
+      size = 10,
+      angle = 0
+    )
+  ) +
+  ggtitle("Frequency distribution of Gad7 responces and Pet Ownership") +
+  labs(y = "Freqency of Responces", x = "Question:During the past two weeks, how often have you been bothered by feeling afraid as if something awful might happen?")
+
+Gad7.fit = glm(PetOwner ~ Gad7, family = binomial, data = turk2)
+kable(summary(Gad7.fit)$coef, digits = 2)
+
+```
+
+<div style="margin-bottom:100px;">
+### Paying attention?
+```{r turk22Q66, echo=F, warning=F} 
+library(dplyr)
+turk2 <- read_excel("2020-5-6 COVID_Raw_Data.xlsx")
+#turk2$PetOwner<-as.factor(turk2$PetOwner)
+turk2$PetOwner <-
+  factor(
+    turk2$PetOwner,
+    levels = c("0", "1"),
+    labels = c("Pets=No", "Pets=Yes")
+  )
+turk2$Q66 <-
+  factor(
+    turk2$Q66,
+    levels = c("1", "2", "3", "4", "5"),
+    labels = c(
+      "None of the time",
+      "A little of the time",
+      "Some of the time",
+      "Mostof the time",
+      "All of the time"
+    )
+  )
+
+#fct_explicit_na(turk2$PetOwner, na_level = "(Missing)")
+tQ66 <- table(turk2$PetOwner, turk2$Q66)
+kable(tQ66, caption = "Contingency Table for Q66 responces and Pet Ownership")
+
+Q66 <-
+  turk2 %>% group_by(PetOwner, Q66) %>% summarise(Frequency = length(Q66))
+ggplot(Q66, aes(
+  fill = (PetOwner),
+  y = Frequency,
+  x = Q66
+)) +
+  geom_bar(position = "dodge", stat = "identity") +
+  theme(
+    axis.text.x = element_text(
+      face = "bold",
+      color = "#993333",
+      size = 10,
+      angle = 90
+    ),
+    axis.text.y = element_text(
+      face = "bold",
+      color = "#993333",
+      size = 10,
+      angle = 0
+    )
+  ) +
+  ggtitle("Frequency distribution of Q66 responces and Pet Ownership") +
+  labs(y = "Freqency of Responces", x = "Question:Paying Attention")
+
+```
+
+<div style="margin-bottom:100px;">
+### During the past two weeks, how often did you feel you lack companionship??
+```{r turk22Lonely1, echo=F, warning=F} 
+library(dplyr)
+turk2 <- read_excel("2020-5-6 COVID_Raw_Data.xlsx")
+#turk2$PetOwner<-as.factor(turk2$PetOwner)
+turk2$PetOwner <-
+  factor(
+    turk2$PetOwner,
+    levels = c("0", "1"),
+    labels = c("Pets=No", "Pets=Yes")
+  )
+turk2$Lonely1 <-
+  factor(
+    turk2$Lonely1,
+    levels = c("1", "2", "3", "4", "5"),
+    labels = c(
+      "None of the time",
+      "A little of the time",
+      "Some of the time",
+      "Mostof the time",
+      "All of the time"
+    )
+  )
+
+#fct_explicit_na(turk2$PetOwner, na_level = "(Missing)")
+tLonely1 <- table(turk2$PetOwner, turk2$Lonely1)
+kable(tLonely1, caption = "Contingency Table for Lonely1 responces and Pet Ownership")
+
+Lonely1 <-
+  turk2 %>% group_by(PetOwner, Lonely1) %>% summarise(Frequency = length(Lonely1))
+ggplot(Lonely1, aes(
+  fill = (PetOwner),
+  y = Frequency,
+  x = Lonely1
+)) +
+  geom_bar(position = "dodge", stat = "identity") +
+  theme(
+    axis.text.x = element_text(
+      face = "bold",
+      color = "#993333",
+      size = 10,
+      angle = 90
+    ),
+    axis.text.y = element_text(
+      face = "bold",
+      color = "#993333",
+      size = 10,
+      angle = 0
+    )
+  ) +
+  ggtitle("Frequency distribution of Lonely1 responces and Pet Ownership") +
+  labs(y = "Freqency of Responces", x = "Question: During the past two weeks, how often did you feel you lack companionship?")
+Lonely1.fit = glm(PetOwner ~ Lonely1, family = binomial, data = turk2)
+kable(summary(Lonely1.fit)$coef, digits = 2)
+
+```
+
+<div style="margin-bottom:100px;">
+### During the past two weeks, how often did you feel left out??
+```{r turk22Lonely2, echo=F, warning=F} 
+library(dplyr)
+turk2 <- read_excel("2020-5-6 COVID_Raw_Data.xlsx")
+#turk2$PetOwner<-as.factor(turk2$PetOwner)
+turk2$PetOwner <- factor(turk2$PetOwner, levels = c("0","1"), labels = c("Pets=No", "Pets=Yes"))
+turk2$Lonely2 <- factor(turk2$Lonely2, levels = c("1","2", "3","4","5"), labels = c("None of the time", "A little of the time","Some of the time", "Mostof the time", "All of the time"))
+
+#fct_explicit_na(turk2$PetOwner, na_level = "(Missing)")
+tLonely2 <- table(turk2$PetOwner, turk2$Lonely2)
+kable(tLonely2, caption = "Contingency Table for Lonely2 responces and Pet Ownership")
+
+Lonely2 <-turk2 %>%group_by(PetOwner, Lonely2)%>%summarise(Frequency =length(Lonely2)) 
+ggplot(Lonely2, aes(fill= (PetOwner), y=Frequency, x=Lonely2)) + 
+geom_bar(position="dodge", stat="identity") +
+theme(axis.text.x = element_text(face="bold", color="#993333", 
+                           size=10, angle=90),
+          axis.text.y = element_text(face="bold", color="#993333", 
+                           size=10, angle=0)) +
+ggtitle("Frequency distribution of Lonely2 responces and Pet Ownership") +
+labs(y="Freqency of Responces", x = "Question:During the past two weeks, how often did you feel left out?")
+
+Lonely2.fit=glm(PetOwner~Lonely1,family=binomial,data=turk2)
+kable(summary(Lonely2.fit)$coef, digits=2)
+
+```
+
+<div style="margin-bottom:100px;">
+### During the past two weeks, how often did you feel isolated from others?
+```{r turk22Lonely3, echo=F, warning=F} 
+library(dplyr)
+turk2 <- read_excel("2020-5-6 COVID_Raw_Data.xlsx")
+#turk2$PetOwner<-as.factor(turk2$PetOwner)
+turk2$PetOwner <- factor(turk2$PetOwner, levels = c("0","1"), labels = c("Pets=No", "Pets=Yes"))
+turk2$Lonely3 <- factor(turk2$Lonely3, levels = c("1","2", "3","4","5"), labels = c("None of the time", "A little of the time","Some of the time", "Mostof the time", "All of the time"))
+
+#fct_explicit_na(turk2$PetOwner, na_level = "(Missing)")
+tLonely3 <- table(turk2$PetOwner, turk2$Lonely3)
+kable(tLonely3, caption = "Contingency Table for Lonely3 responces and Pet Ownership")
+
+Lonely3 <-turk2 %>%group_by(PetOwner, Lonely3)%>%summarise(Frequency =length(Lonely3)) 
+ggplot(Lonely3, aes(fill= (PetOwner), y=Frequency, x=Lonely3)) + 
+geom_bar(position="dodge", stat="identity") +
+theme(axis.text.x = element_text(face="bold", color="#993333", 
+                           size=10, angle=90),
+          axis.text.y = element_text(face="bold", color="#993333", 
+                           size=10, angle=0)) +
+ggtitle("Frequency distribution of Lonely3 responces and Pet Ownership") +
+labs(y="Freqency of Responces", x = "Question:During the past two weeks, how often did you feel isolated from others")
+
+Lonely3.fit=glm(PetOwner~Lonely3,family=binomial,data=turk2)
+kable(summary(Lonely3.fit)$coef, digits=2)
+
+```
+
+#### Risk questions
+
+<div style="margin-bottom:100px;">
+### RISK 1: In your opinion, how likely is it that you will contract COVID-19?        ?
+```{r turk22Risk1, echo=F, warning=F} 
+library(dplyr)
+turk2 <- read_excel("2020-5-6 COVID_Raw_Data.xlsx")
+#turk2$PetOwner<-as.factor(turk2$PetOwner)
+turk2$PetOwner <- factor(turk2$PetOwner, levels = c("0","1"), labels = c("Pets=No", "Pets=Yes"))
+turk2$Risk1 <- factor(turk2$Risk1, levels = c("1","2", "3","4","5","6", "7"), labels = c("Extremely unlikely", "Moderately unlikely","Slightly unlikely", "Neither likely nor unlikely", "Slightly likely", "Moderately likely", "Extremely likely"))
+
+
+#fct_explicit_na(turk2$PetOwner, na_level = "(Missing)")
+tRisk1 <- table(turk2$PetOwner, turk2$Risk1)
+kable(tRisk1, caption = "Contingency Table for Risk1 responces and Pet Ownership")
+
+Risk1 <-turk2 %>%group_by(PetOwner, Risk1)%>%summarise(Frequency =length(Risk1)) 
+ggplot(Risk1, aes(fill= (PetOwner), y=Frequency, x=Risk1)) + 
+geom_bar(position="dodge", stat="identity") +
+theme(axis.text.x = element_text(face="bold", color="#993333", 
+                           size=10, angle=90),
+          axis.text.y = element_text(face="bold", color="#993333", 
+                           size=10, angle=0)) +
+ggtitle("Frequency distribution of Risk1 responces and Pet Ownership") +
+labs(y="Freqency of Responces", x = "Question:During the past two weeks, how often did you feel left out?")
+
+Risk1.fit=glm(PetOwner~Risk1,family=binomial,data=turk2)
+kable(summary(Risk1.fit)$coef, digits=2)
+
+```
+
+<div style="margin-bottom:100px;">
+### RISK 2: How serious do you think COVID-19 would be if you contracted it?        ?
+```{r turk22Risk2, echo=F, warning=F} 
+library(dplyr)
+turk2 <- read_excel("2020-5-6 COVID_Raw_Data.xlsx")
+#turk2$PetOwner<-as.factor(turk2$PetOwner)
+turk2$PetOwner <- factor(turk2$PetOwner, levels = c("0","1"), labels = c("Pets=No", "Pets=Yes"))
+turk2$Risk2 <- factor(turk2$Risk2, levels = c("1","2", "3","4","5"), labels = c("Not at all", "Slightly","Moderately", "Very", "Extremely"))
+
+#fct_explicit_na(turk2$PetOwner, na_level = "(Missing)")
+tRisk2 <- table(turk2$PetOwner, turk2$Risk2)
+kable(tRisk2, caption = "Contingency Table for Risk2 responces and Pet Ownership")
+
+Risk2 <-turk2 %>%group_by(PetOwner, Risk2)%>%summarise(Frequency =length(Risk2)) 
+ggplot(Risk2, aes(fill= (PetOwner), y=Frequency, x=Risk2)) + 
+geom_bar(position="dodge", stat="identity") +
+theme(axis.text.x = element_text(face="bold", color="#993333", 
+                           size=10, angle=90),
+          axis.text.y = element_text(face="bold", color="#993333", 
+                           size=10, angle=0)) +
+ggtitle("Frequency distribution of Risk2 responces and Pet Ownership") +
+labs(y="Freqency of Responces", x = "Question:How serious do you think COVID-19 would be if you contracted it?")
+
+Risk2.fit=glm(PetOwner~Risk2,family=binomial,data=turk2)
+kable(summary(Risk2.fit)$coef, digits=2)
+
+```
+
+<div style="margin-bottom:100px;">
+### RISK 3: How concerned are you about the COVID-19??        ?
+```{r turk22Risk3, echo=F, warning=F} 
+library(dplyr)
+library(xtable)
+turk2 <- read_excel("2020-5-6 COVID_Raw_Data.xlsx")
+#turk2$PetOwner<-as.factor(turk2$PetOwner)
+turk2$PetOwner <-
+  factor(
+    turk2$PetOwner,
+    levels = c("0", "1"),
+    labels = c("Pets=No", "Pets=Yes")
+  )
+turk2$Risk3 <-
+  factor(
+    turk2$Risk3,
+    levels = c("1", "2", "3", "4", "5"),
+    labels = c("Not at all", "Slightly", "Moderately", "Very", "Extremely")
+  )
+
+#fct_explicit_na(turk2$PetOwner, na_level = "(Missing)")
+tRisk3 <- table(turk2$PetOwner, turk2$Risk3)
+kable(tRisk3, caption = "Contingency Table for Risk3 responces and Pet Ownership")
+
+Risk3 <-
+  turk2 %>% group_by(PetOwner, Risk3) %>% summarise(Frequency = length(Risk3))
+ggplot(Risk3, aes(
+  fill = (PetOwner),
+  y = Frequency,
+  x = Risk3
+)) +
+  geom_bar(position = "dodge", stat = "identity") +
+  theme(
+    axis.text.x = element_text(
+      face = "bold",
+      color = "#993333",
+      size = 10,
+      angle = 90
+    ),
+    axis.text.y = element_text(
+      face = "bold",
+      color = "#993333",
+      size = 10,
+      angle = 0
+    )
+  ) +
+  ggtitle("Frequency distribution of Risk3 responces and Pet Ownership") +
+  labs(y = "Freqency of Responces", x = "Question: How concerned are you about the COVID-19??")
+
+Risk3.fit = glm(PetOwner ~ Risk3, family = binomial, data = turk2)
+kable(summary(Risk3.fit)$coef, digits = 2)
+
+```
+
+<div style="margin-bottom:100px;">
+### Pets2: How long have you had this animal?        ?
+```{r turk22Pets2, echo=F, warning=F} 
+library(dplyr)
+library(forcats)
+turk2 <- read_excel("2020-5-6 COVID_Raw_Data.xlsx")
+turk2$PetOwner <-
+  factor(
+    turk2$PetOwner,
+    levels = c("0", "1"),
+    labels = c("Pets=No", "Pets=Yes")
+  )
+turk2$Risk2 <-
+  factor(
+    turk2$Risk2,
+    levels = c("1", "2", "3", "4", "5"),
+    labels = c("Not at all", "Slightly", "Moderately", "Very", "Extremely"),
+    fct_explicit_na("Missing")
+  )
+turk2$MostAttachTime <-
+  factor(
+    turk2$MostAttachTime,
+    levels = c("1", "2", "3"),
+    labels = c("<1 month", "1-12 month", "more than 12 months"),
+    fct_explicit_na("Missing")
+  )
+turk2$MostAttach <-
+  factor(
+    turk2$MostAttach,
+    levels = c("1", "2", "3", "4", "5", "6", "7", "8"),
+    labels = c(
+      "Dog",
+      "Cat",
+      "Horse",
+      "Bird",
+      "Reptile",
+      "Small Mammal" ,
+      "Fish",
+      "Other"
+    )
+  )
+#fct_explicit_na(turk2$MostAttach,"Missing")
+#fct_explicit_na(turk2$PetOwner, na_level = "(Missing)")
+tPets2 <- table(turk2$MostAttachTime, turk2$MostAttach)
+kable(tPets2,
+      caption = "Contingency Table for length of ownership",
+      table.attr = "class=\"striped\"",
+      format = "html")
+# want to remove NA i.e. non pet owners.
+
+MostAttachTime <- turk2 %>%
+  dplyr::filter(PetOwner == "Pets=Yes") %>%
+  group_by(MostAttachTime, MostAttach) %>% summarise(Frequency = length(MostAttachTime))
+
+
+ggplot(MostAttachTime, aes(
+  fill = (MostAttach),
+  y = Frequency,
+  x = MostAttachTime
+)) +
+  geom_bar(position = "dodge", stat = "identity") +
+  geom_text(aes(label = Frequency),
+            position = position_dodge(width = 0.9),
+            vjust = -0.25) +
+  theme(
+    axis.text.x = element_text(
+      face = "bold",
+      color = "#993333",
+      size = 10,
+      angle = 0
+    ),
+    axis.text.y = element_text(
+      face = "bold",
+      color = "#993333",
+      size = 10,
+      angle = 45
+    )
+  ) +
+  ggtitle("Frequency distribution of ownership time  by pet") +
+  labs(y = "Freqency of Responces", x = "Question: How long have you owned your pet?")
+
+```
+
+<div style="margin-bottom:100px;">
+### Compliance: How long have you had this animal?        
+```{r turk22Compliance, echo=F, warning=F} 
+library(dplyr)
+turk2 <- read_excel("2020-5-6 COVID_Raw_Data.xlsx")
+turk2$PetOwner <-
+  factor(
+    turk2$PetOwner,
+    levels = c("0", "1"),
+    labels = c("Pets=No", "Pets=Yes")
+  )
+turk2$Compliance <-
+  factor(turk2$Compliance,
+         levels = c("0", "1"),
+         labels = c("No", "Yes"))
+turk2$MostAttach <-
+  factor(
+    turk2$MostAttach,
+    levels = c("1", "2", "3", "4", "5", "6", "7", "8"),
+    labels = c(
+      "Dog",
+      "Cat",
+      "Horse",
+      "Bird",
+      "Reptile",
+      "Small Mammal" ,
+      "Fish",
+      "Other"
+    )
+  )
+#turk2$MostAttach<-factor(turk2$MostAttach, levels = c("1","2","3","4","5","6","7","8"), labels = c("Dog", "Cat", "Horse","Other", "Other", "Other" , "Other", "Other"))
+
+tCompliance <- table(turk2$Compliance, turk2$MostAttach)
+kable(tCompliance, caption = "Contingency Table for All Pets and Quarantine Compliance")
+
+Compliance <- turk2 %>%
+  dplyr::filter(MostAttach == "Dog" | MostAttach == "Cat") %>%
+  group_by(Compliance, MostAttach) %>%
+  summarise(Frequency = length(Compliance))
+
+ggplot(Compliance, aes(
+  fill = (MostAttach),
+  y = Frequency,
+  x = Compliance
+)) +
+  geom_bar(position = "dodge", stat = "identity") +
+  theme(
+    axis.text.x = element_text(
+      face = "bold",
+      color = "#993333",
+      size = 10,
+      angle = 90
+    ),
+    axis.text.y = element_text(
+      face = "bold",
+      color = "#993333",
+      size = 10,
+      angle = 0
+    )
+  ) +
+  ggtitle("Frequency distribution of ownership time  by pet") +
+  labs(y = "Freqency of Responces", x = "Question:How has your complcaince been?")
+
+ggplot(Compliance, aes(
+  fill = (Compliance),
+  y = Frequency,
+  x = MostAttach
+)) +
+  geom_bar(position = "fill", stat = "identity") +
+  theme(
+    axis.text.x = element_text(
+      face = "bold",
+      color = "#993333",
+      size = 10,
+      angle = 90
+    ),
+    axis.text.y = element_text(
+      face = "bold",
+      color = "#993333",
+      size = 10,
+      angle = 0
+    )
+  ) +
+  #geom_text(aes(label=Frequency), position=position_dodge(width=0.9), vjust=-0.25)+
+  ggtitle("Frequency distribution of ownership time  by pet") +
+  labs(y = "Freqency of Responces", x = "Question:How has your complcaince been?")
+
+Compliance.fit = glm(Compliance ~ MostAttach, family = binomial, data =
+                       turk2)
+kable(summary(Compliance.fit)$coef, digits = 2)
+
+```
+
+<div style="margin-bottom:100px;">
+### Interact: Has COVID-19 affected your normal activities and interactions with your pet/companion animal(s)?       
+```{r turk22Interact, echo=F, warning=F} 
+library(dplyr)
+turk2 <- read_excel("2020-5-6 COVID_Raw_Data.xlsx")
+turk2$PetOwner <-
+  factor(
+    turk2$PetOwner,
+    levels = c("0", "1"),
+    labels = c("Pets=No", "Pets=Yes")
+  )
+turk2$Interact <-
+  factor(turk2$Interact,
+         levels = c("0", "1"),
+         labels = c("No", "Yes"))
+turk2$MostAttach <-
+  factor(
+    turk2$MostAttach,
+    levels = c("1", "2", "3", "4", "5", "6", "7", "8"),
+    labels = c(
+      "Dog",
+      "Cat",
+      "Horse",
+      "Bird",
+      "Reptile",
+      "Small Mammal" ,
+      "Fish",
+      "Other"
+    )
+  )
+#turk2$MostAttach<-factor(turk2$MostAttach, levels = c("1","2","3","4","5","6","7","8"), labels = c("Dog", "Cat", "Horse","Other", "Other", "Other" , "Other", "Other"))
+
+tInteract <- table(turk2$Interact, turk2$MostAttach)
+kable(tInteract, caption = "Contingency Table for All Pets and Interaction")
+
+Interact <- turk2 %>%
+  dplyr::filter(MostAttach == "Dog" | MostAttach == "Cat") %>%
+  group_by(Interact, MostAttach) %>%
+  summarise(Frequency = length(Interact))
+
+ggplot(Interact, aes(
+  fill = (MostAttach),
+  y = Frequency,
+  x = Interact
+)) +
+  geom_bar(position = "dodge", stat = "identity") +
+  geom_text(aes(label = Frequency),
+            position = position_dodge(width = 0.9),
+            vjust = -0.25) +
+  theme(
+    axis.text.x = element_text(
+      face = "bold",
+      color = "#993333",
+      size = 10,
+      angle = 90
+    ),
+    axis.text.y = element_text(
+      face = "bold",
+      color = "#993333",
+      size = 10,
+      angle = 0
+    )
+  ) +
+  ggtitle("Frequency distribution of Interaction by pet") +
+  labs(y = "Freqency of Responces", x = "Question:How has your complcaince been?")
+
+ggplot(Interact, aes(
+  fill = (Interact),
+  y = Frequency,
+  x = MostAttach
+)) +
+  geom_bar(position = "fill", stat = "identity") +
+  theme(
+    axis.text.x = element_text(
+      face = "bold",
+      color = "#993333",
+      size = 10,
+      angle = 90
+    ),
+    axis.text.y = element_text(
+      face = "bold",
+      color = "#993333",
+      size = 10,
+      angle = 0
+    )
+  ) +
+  #geom_text(aes(label=Frequency), position=position_dodge(width=0.9), vjust=-0.25)+
+  ggtitle("Frequency distribution of ownership time  by pet") +
+  labs(y = "Freqency of Responces", x = "Question: Has COVID-19 affected your normal activities and interactions with your pet/companion animal(s)")
+
+Interact.fit = glm(Interact ~ MostAttach, family = binomial, data =
+                       turk2)
+kable(summary(Interact.fit)$coef, digits = 2)
+
+```
+
+<div style="margin-bottom:100px;">
+### Plans: Since the COVID-19 outbreak, have you made plans for caring for your pet/companion animal(s) should you become sick and unable to care for them?       
+```{r turk22Plans, echo=F, warning=F} 
+library(dplyr)
+turk2 <- read_excel("2020-5-6 COVID_Raw_Data.xlsx")
+turk2$PetOwner <-
+  factor(
+    turk2$PetOwner,
+    levels = c("0", "1"),
+    labels = c("Pets=No", "Pets=Yes")
+  )
+turk2$Plans <-
+  factor(turk2$Plans,
+         levels = c("0", "1"),
+         labels = c("No", "Yes"))
+turk2$MostAttach <-
+  factor(
+    turk2$MostAttach,
+    levels = c("1", "2", "3", "4", "5", "6", "7", "8"),
+    labels = c(
+      "Dog",
+      "Cat",
+      "Horse",
+      "Bird",
+      "Reptile",
+      "Small Mammal" ,
+      "Fish",
+      "Other"
+    )
+  )
+#turk2$MostAttach<-factor(turk2$MostAttach, levels = c("1","2","3","4","5","6","7","8"), labels = c("Dog", "Cat", "Horse","Other", "Other", "Other" , "Other", "Other"))
+
+tPlans <- table(turk2$Plans, turk2$MostAttach)
+kable(tPlans, caption = "Contingency Table for All Pets and Plans")
+
+Plans <- turk2 %>%
+  dplyr::filter(MostAttach == "Dog" | MostAttach == "Cat") %>%
+  group_by(Plans, MostAttach) %>%
+  summarise(Frequency = length(Plans))
+
+ggplot(Plans, aes(
+  fill = (MostAttach),
+  y = Frequency,
+  x = Plans
+)) +
+  geom_bar(position = "dodge", stat = "identity") +
+  geom_text(aes(label = Frequency),
+            position = position_dodge(width = 0.9),
+            vjust = -0.25) +
+  theme(
+    axis.text.x = element_text(
+      face = "bold",
+      color = "#993333",
+      size = 10,
+      angle = 90
+    ),
+    axis.text.y = element_text(
+      face = "bold",
+      color = "#993333",
+      size = 10,
+      angle = 0
+    )
+  ) +
+  ggtitle("Frequency distribution of Plans by pet") +
+  labs(y = "Frequency of Responces", x = "QPlans")
+
+ggplot(Plans, aes(
+  fill = (Plans),
+  y = Frequency,
+  x = MostAttach
+)) +
+  geom_bar(position = "fill", stat = "identity") +
+  theme(
+    axis.text.x = element_text(
+      face = "bold",
+      color = "#993333",
+      size = 10,
+      angle = 90
+    ),
+    axis.text.y = element_text(
+      face = "bold",
+      color = "#993333",
+      size = 10,
+      angle = 0
+    )
+  ) +
+  #geom_text(aes(label=Frequency), position=position_dodge(width=0.9), vjust=-0.25)+
+  ggtitle("Frequency distribution of ownership time  by pet") +
+  labs(y = "Freqency of Responces", x = "Since the COVID-19 outbreak, have you made plans for caring for your pet/companion animal(s) should you become sick and unable to care for them?" )
+
+Plans.fit = glm(Plans ~ MostAttach, family = binomial, data =
+                       turk2)
+kable(summary(Plans.fit)$coef, digits = 2)
+
+```
+
+<div style="margin-bottom:100px;">
+### Concern: Overall, how concerned are you about your ability to care for your pets/companion animal(s)?       
+```{r turk22Concern, echo=F, warning=F} 
+library(dplyr)
+turk2 <- read_excel("2020-5-6 COVID_Raw_Data.xlsx")
+turk2$PetOwner <-
+  factor(
+    turk2$PetOwner,
+    levels = c("0", "1"),
+    labels = c("Pets=No", "Pets=Yes")
+  )
+turk2$Concern <-
+  factor(turk2$Concern,
+         levels = c("1", "2","3","4","5"),
+         labels = c("Not at all concerned", "A little concerned", "Moderately concerened", "Very concerned", "Extremely concerned"))
+
+
+turk2$MostAttach <-
+  factor(
+    turk2$MostAttach,
+    levels = c("1", "2", "3", "4", "5", "6", "7", "8"),
+    labels = c(
+      "Dog",
+      "Cat",
+      "Horse",
+      "Bird",
+      "Reptile",
+      "Small Mammal" ,
+      "Fish",
+      "Other"
+    )
+  )
+#turk2$MostAttach<-factor(turk2$MostAttach, levels = c("1","2","3","4","5","6","7","8"), labels = c("Dog", "Cat", "Horse","Other", "Other", "Other" , "Other", "Other"))
+
+tConcern <- table(turk2$Concern, turk2$MostAttach)
+kable(tConcern, caption = "Contingency Table for All Pets and Concerns")
+
+Concern <- turk2 %>%
+  dplyr::filter(MostAttach == "Dog" | MostAttach == "Cat") %>%
+  group_by(Concern, MostAttach) %>%
+  summarise(Frequency = length(Concern))
+
+ggplot(Concern, aes(
+  fill = (MostAttach),
+  y = Frequency,
+  x = Concern
+)) +
+  geom_bar(position = "dodge", stat = "identity") +
+  geom_text(aes(label = Frequency),
+            position = position_dodge(width = 0.9),
+            vjust = -0.25) +
+  theme(
+    axis.text.x = element_text(
+      face = "bold",
+      color = "#993333",
+      size = 10,
+      angle = 90
+    ),
+    axis.text.y = element_text(
+      face = "bold",
+      color = "#993333",
+      size = 10,
+      angle = 0
+    )
+  ) +
+  ggtitle("Frequency distribution of Concerns by pet") +
+  labs(y = "Frequency of Responces", x = "Concerns")
+
+ggplot(Concern, aes(
+  fill = (Concern),
+  y = Frequency,
+  x = MostAttach
+)) +
+  geom_bar(position = "fill", stat = "identity") +
+  theme(
+    axis.text.x = element_text(
+      face = "bold",
+      color = "#993333",
+      size = 10,
+      angle = 90
+    ),
+    axis.text.y = element_text(
+      face = "bold",
+      color = "#993333",
+      size = 10,
+      angle = 0
+    )
+  ) +
+  #geom_text(aes(label=Frequency), position=position_dodge(width=0.9), vjust=-0.25)+
+  ggtitle("Frequency distribution of ownership time  by pet") +
+  labs(y = "Freqency of Responces", x = "Since the COVID-19 outbreak, have you made plans for caring for your pet/companion animal(s) should you become sick and unable to care for them?" )
+
+Concern.fit = glm(Concern ~ MostAttach, family = binomial, data =
+                       turk2)
+kable(summary(Concern.fit)$coef, digits = 2)
+
+```
+
+
+### NonVetService: In the past 12 months have you used an animal care service that does NOT normally require a veterinarian?         
+```{r turk2NonVetService, echo=F, warning=F} 
+library(dplyr)
+turk2 <- read_excel("2020-5-6 COVID_Raw_Data.xlsx")
+turk2$PetOwner <-
+  factor(
+    turk2$PetOwner,
+    levels = c("0", "1"),
+    labels = c("Pets=No", "Pets=Yes")
+  )
+turk2$NonVetService <-
+  factor(
+    turk2$NonVetService,
+    levels = c("0", "1"),
+    labels = c("No", "Yes")
+  )
+
+turk2$MostAttach <-
+  factor(
+    turk2$MostAttach,
+    levels = c("1", "2", "3", "4", "5", "6", "7", "8"),
+    labels = c(
+      "Dog",
+      "Cat",
+      "Horse",
+      "Bird",
+      "Reptile",
+      "Small Mammal" ,
+      "Fish",
+      "Other"
+    )
+  )
+
+
+
+tNonVetService <- table(turk2$NonVetService, turk2$MostAttach)
+kable(tNonVetService, caption = "Contingency Table for  NonVetService")
+
+NonVetService <- turk2 %>%
+  dplyr::filter(MostAttach == "Dog" | MostAttach == "Cat") %>%
+  group_by(NonVetService, MostAttach) %>%
+  summarise(Frequency = length(NonVetService))
+
+ggplot(NonVetService, aes(
+  fill = (MostAttach),
+  y = Frequency,
+  x = NonVetService
+)) +
+  geom_bar(position = "dodge", stat = "identity") +
+  geom_text(aes(label = Frequency),
+            position = position_dodge(width = 0.9),
+            vjust = -0.25) +
+  theme(
+    axis.text.x = element_text(
+      face = "bold",
+      color = "#993333",
+      size = 10,
+      angle = 90
+    ),
+    axis.text.y = element_text(
+      face = "bold",
+      color = "#993333",
+      size = 10,
+      angle = 0
+    )
+  ) +
+  ggtitle("Frequency distribution of NonVetService for Dogs and Cats") +
+  labs(y = "Frequency of Responces", x = "NonVetService")
+
+ggplot(NonVetService, aes(
+  fill = (NonVetService),
+  y = Frequency,
+  x = MostAttach
+)) +
+  geom_bar(position = "fill", stat = "identity") +
+  theme(
+    axis.text.x = element_text(
+      face = "bold",
+      color = "#993333",
+      size = 10,
+      angle = 90
+    ),
+    axis.text.y = element_text(
+      face = "bold",
+      color = "#993333",
+      size = 10,
+      angle = 0
+    )
+  ) +
+  #geom_text(aes(label=Frequency), position=position_dodge(width=0.9), vjust=-0.25)+
+  ggtitle("Frequency distribution of NonVetService  by pet") +
+  labs(y = "Freqency of Responces", x = "Since the COVID-19 outbreak, have you made plans for caring for your pet/companion animal(s) should you become sick and unable to care for them?" )
+
+NonVetService.fit = glm(NonVetService ~ MostAttach, family = binomial, data =
+                       turk2)
+kable(summary(NonVetService.fit)$coef, digits = 2)
+
+```
+
+
+
+
+
+
+### NonVetLessFreq : In the past 12 months have you used an animal care service that does NOT normally require a veterinarian?         
+```{r turk2NonVetLessFreq, echo=F, warning=F} 
+library(dplyr)
+turk2 <- read_excel("2020-5-6 COVID_Raw_Data.xlsx")
+turk2$PetOwner <-
+  factor(
+    turk2$PetOwner,
+    levels = c("0", "1"),
+    labels = c("Pets=No", "Pets=Yes")
+  )
+turk2$NonVetLessFreq  <-
+  factor(
+    turk2$NonVetLessFreq ,
+    levels = c("0", "1"),
+    labels = c("No", "Yes")
+  )
+
+turk2$MostAttach <-
+  factor(
+    turk2$MostAttach,
+    levels = c("1", "2", "3", "4", "5", "6", "7", "8"),
+    labels = c(
+      "Dog",
+      "Cat",
+      "Horse",
+      "Bird",
+      "Reptile",
+      "Small Mammal" ,
+      "Fish",
+      "Other"
+    )
+  )
+
+
+tNonVetLessFreq  <- table(turk2$NonVetLessFreq , turk2$MostAttach)
+kable(tNonVetLessFreq , caption = "Contingency Table for  NonVetLessFreq ")
+
+NonVetLessFreq  <- turk2 %>%
+   dplyr::filter(PetOwner == "Pets=Yes") %>%
+  dplyr::filter(MostAttach == "Dog" | MostAttach == "Cat") %>%
+  group_by(NonVetLessFreq , MostAttach) %>%
+  summarise(Frequency = length(NonVetLessFreq))
+
+ggplot(NonVetLessFreq , aes(
+  fill = (MostAttach),
+  y = Frequency,
+  x = NonVetLessFreq 
+)) +
+  geom_bar(position = "dodge", stat = "identity") +
+  geom_text(aes(label = Frequency),
+            position = position_dodge(width = 0.9),
+            vjust = -0.25) +
+  theme(
+    axis.text.x = element_text(
+      face = "bold",
+      color = "#993333",
+      size = 10,
+      angle = 90
+    ),
+    axis.text.y = element_text(
+      face = "bold",
+      color = "#993333",
+      size = 10,
+      angle = 0
+    )
+  ) +
+  ggtitle("Frequency distribution of NonVetLessFreq  for Dogs and Cats") +
+  labs(y = "Frequency of Responces", x = "NonVetLessFreq ")
+
+ggplot(NonVetLessFreq , aes(
+  fill = (NonVetLessFreq ),
+  y = Frequency,
+  x = MostAttach
+)) +
+  geom_bar(position = "fill", stat = "identity") +
+  theme(
+    axis.text.x = element_text(
+      face = "bold",
+      color = "#993333",
+      size = 10,
+      angle = 90
+    ),
+    axis.text.y = element_text(
+      face = "bold",
+      color = "#993333",
+      size = 10,
+      angle = 0
+    )
+  ) +
+  #geom_text(aes(label=Frequency), position=position_dodge(width=0.9), vjust=-0.25)+
+  ggtitle("Frequency distribution of NonVetLessFreq   by pet") +
+  labs(y = "Freqency of Responces", x = "In the past 12 months have you used an animal care service \n that does NOT normally require a veterinarian?" )
+
+NonVetLessFreq.fit = glm(NonVetLessFreq  ~ MostAttach, family = binomial, data =
+                       turk2)
+kable(summary(NonVetLessFreq.fit)$coef, digits = 2)
+
+```
+
+
+
+### WhyNonVetLessFreq : Which of the following best describes why you are using these services less frequently?        
+```{r turk2WhyNonVetLessFreq, echo=F, warning=F} 
+library(dplyr)
+turk2 <- read_excel("2020-5-6 COVID_Raw_Data.xlsx")
+
+turk2$NonVetLessFreq  <-
+  factor(
+    turk2$NonVetLessFreq ,
+    levels = c("0", "1"),
+    labels = c("No", "Yes")
+  )
+
+turk2$PetOwner <-
+  factor(
+    turk2$PetOwner,
+    levels = c("0", "1"),
+    labels = c("Pets=No", "Pets=Yes")
+  )
+turk2$WhyNonVetLessFreq  <-
+  factor(
+    turk2$WhyNonVetLessFreq ,
+    levels = c("1", "2", "3", "4", "5", "6", "7"),
+    labels = c(
+    "Concerned about exposure", 
+    "Concerned about pets exposure",   
+    "Following public health message", 
+    "Can't afford now", 
+    "Too busy doing other things ", 
+    "Services unavailable", 
+    "Other" 
+)
+  )
+#summary(turk2$WhyNonVetLessFreq)
+turk2$MostAttach <-
+  factor(
+    turk2$MostAttach,
+    levels = c("1", "2", "3", "4", "5", "6", "7", "8"),
+    labels = c(
+      "Dog",
+      "Cat",
+      "Horse",
+      "Bird",
+      "Reptile",
+      "Small Mammal" ,
+      "Fish",
+      "Other"
+    )
+  )
+summary(turk2$MostAttach)
+tWhyNonVetLessFreq <- table(turk2$WhyNonVetLessFreq , turk2$MostAttach)
+kable(tWhyNonVetLessFreq, caption = "Contingency Table for WhyNonVetLessFreq ")
+
+WhyNonVetLessFreq  <- turk2 %>%
+  dplyr::filter(NonVetLessFreq == "Yes") %>%
+  dplyr::filter(MostAttach == "Dog" | MostAttach == "Cat") %>%
+  group_by(WhyNonVetLessFreq , MostAttach) %>%
+  summarise(Frequency = length(WhyNonVetLessFreq))
+
+ggplot(WhyNonVetLessFreq , aes(
+  fill = (MostAttach),
+  y = Frequency,
+  x = WhyNonVetLessFreq 
+)) +
+  geom_bar(position = "dodge", stat = "identity") +
+  geom_text(aes(label = Frequency),
+            position = position_dodge(width = 0.9),
+            vjust = -0.25) +
+            coord_flip() +
+  theme(
+    axis.text.x = element_text(
+      face = "bold",
+      color = "#993333",
+      size = 10,
+      angle = 90
+    ),
+    axis.text.y = element_text(
+      face = "bold",
+      color = "#993333",
+      size = 10,
+      angle = 0
+    )
+  ) +
+  ggtitle("Frequency distribution of WhyNonVetLessFreq  for Dogs and Cats") +
+  labs(y = "Frequency of Responces", x = "WhyNonVetLessFreq ")
+
+ggplot(WhyNonVetLessFreq , aes(
+  fill = (WhyNonVetLessFreq ),
+  y = Frequency,
+  x = MostAttach
+)) +
+  geom_bar(position = "fill", stat = "identity") +
+  theme(
+    axis.text.x = element_text(
+      face = "bold",
+      color = "#993333",
+      size = 10,
+      angle = 90
+    ),
+    axis.text.y = element_text(
+      face = "bold",
+      color = "#993333",
+      size = 10,
+      angle = 0
+    )
+  ) +
+  #geom_text(aes(label=Frequency), position=position_dodge(width=0.9), vjust=-0.25)+
+  ggtitle("Frequency distribution of WhyNonVetLessFreq   by pet") +
+  labs(y = "Freqency of Responces", x = "Which of the following best describes why \n you are using these services less frequently?" )
+
+WhyNonVetLessFreq.fit = glm(WhyNonVetLessFreq ~ MostAttach, family = binomial, data =
+                       turk2)
+kable(summary(WhyNonVetLessFreq.fit)$coef, digits = 2)
+
+```
+### Pet attachement
+
+
+<div style="margin-bottom:100px;">
+### CCAS1: My pet/animal provides me with companionship?       
+```{r turk2CCAS1, echo=F, warning=F} 
+library(dplyr)
+turk2 <- read_excel("2020-5-6 COVID_Raw_Data.xlsx")
+turk2$PetOwner <-
+  factor(
+    turk2$PetOwner,
+    levels = c("0", "1"),
+    labels = c("Pets=No", "Pets=Yes")
+  )
+turk2$CCAS1 <-
+  factor(turk2$CCAS1,
+         levels = c("1", "2","3","4","5","6","7"),
+         labels = c(
+           "Strongly disagree",
+           "Disagree" ,
+           "Somewhat disagree",
+           "Neither agree nor disagree", 
+          "Somewhat agree", 
+          "Agree", 
+          "Strongly agree" 
+))
+
+
+turk2$MostAttach <-
+  factor(
+    turk2$MostAttach,
+    levels = c("1", "2", "3", "4", "5", "6", "7", "8"),
+    labels = c(
+      "Dog",
+      "Cat",
+      "Horse",
+      "Bird",
+      "Reptile",
+      "Small Mammal" ,
+      "Fish",
+      "Other"
+    )
+  )
+#turk2$MostAttach<-factor(turk2$MostAttach, levels = c("1","2","3","4","5","6","7","8"), labels = c("Dog", "Cat", "Horse","Other", "Other", "Other" , "Other", "Other"))
+
+tCCAS1 <- table(turk2$CCAS1, turk2$MostAttach)
+kable(tCCAS1, caption = "CCAS1: My pet/animal provides me with companionship?")
+
+CCAS1 <- turk2 %>%
+  dplyr::filter(MostAttach == "Dog" | MostAttach == "Cat") %>%
+  group_by(CCAS1, MostAttach) %>%
+  summarise(Frequency = length(CCAS1))
+
+ggplot(CCAS1, aes(
+  fill = (MostAttach),
+  y = Frequency,
+  x = CCAS1
+)) +
+  geom_bar(position = "dodge", stat = "identity") +
+  geom_text(aes(label = Frequency),
+            position = position_dodge(width = 0.9),
+            vjust = -0.25) +
+  theme(
+    axis.text.x = element_text(
+      face = "bold",
+      color = "#993333",
+      size = 10,
+      angle = 90
+    ),
+    axis.text.y = element_text(
+      face = "bold",
+      color = "#993333",
+      size = 10,
+      angle = 0
+    )
+  ) +
+  ggtitle("Frequency distribution of CCAS1 by pet") +
+  labs(y = "Frequency of Responces", x = "My pet/animal provides me with companionship?")
+
+ggplot(CCAS1, aes(
+  fill = (CCAS1),
+  y = Frequency,
+  x = MostAttach
+)) +
+  geom_bar(position = "fill", stat = "identity") +
+  theme(
+    axis.text.x = element_text(
+      face = "bold",
+      color = "#993333",
+      size = 10,
+      angle = 90
+    ),
+    axis.text.y = element_text(
+      face = "bold",
+      color = "#993333",
+      size = 10,
+      angle = 0
+    )
+  ) +
+  #geom_text(aes(label=Frequency), position=position_dodge(width=0.9), vjust=-0.25)+
+  ggtitle("Frequency distribution of ownership time  by pet") +
+  labs(y = "Freqency of Responces", x = "My pet/animal provides me with companionship?" )
+
+CCAS1.fit = glm(CCAS1 ~ MostAttach, family = binomial, data =
+                       turk2)
+kable(summary(CCAS1.fit)$coef, digits = 2)
+
+```
+
+
+<div style="margin-bottom:100px;">
+
+
+### CCAS2: Having a pet/animal gives me something to care for?  
+```{r turk2CCAS2, echo=F, warning=F} 
+library(dplyr)
+turk2 <- read_excel("2020-5-6 COVID_Raw_Data.xlsx")
+turk2$PetOwner <-
+  factor(
+    turk2$PetOwner,
+    levels = c("0", "1"),
+    labels = c("Pets=No", "Pets=Yes")
+  )
+turk2$CCAS2 <-
+  factor(turk2$CCAS2,
+         levels = c("1", "2","3","4","5","6","7"),
+         labels = c(
+           "Strongly disagree",
+           "Disagree" ,
+           "Somewhat disagree",
+           "Neither agree nor disagree", 
+          "Somewhat agree", 
+          "Agree", 
+          "Strongly agree" 
+))
+
+
+turk2$MostAttach <-
+  factor(
+    turk2$MostAttach,
+    levels = c("1", "2", "3", "4", "5", "6", "7", "8"),
+    labels = c(
+      "Dog",
+      "Cat",
+      "Horse",
+      "Bird",
+      "Reptile",
+      "Small Mammal" ,
+      "Fish",
+      "Other"
+    )
+  )
+#turk2$MostAttach<-factor(turk2$MostAttach, levels = c("1","2","3","4","5","6","7","8"), labels = c("Dog", "Cat", "Horse","Other", "Other", "Other" , "Other", "Other"))
+
+tCCAS2 <- table(turk2$CCAS2, turk2$MostAttach)
+kable(tCCAS2, caption = "CCAS2: Having a pet/animal gives me something to care for")
+
+CCAS2 <- turk2 %>%
+  dplyr::filter(MostAttach == "Dog" | MostAttach == "Cat") %>%
+  group_by(CCAS2, MostAttach) %>%
+  summarise(Frequency = length(CCAS2))
+
+ggplot(CCAS2, aes(
+  fill = (MostAttach),
+  y = Frequency,
+  x = CCAS2
+)) +
+  geom_bar(position = "dodge", stat = "identity") +
+  geom_text(aes(label = Frequency),
+            position = position_dodge(width = 0.9),
+            vjust = -0.25) +
+  theme(
+    axis.text.x = element_text(
+      face = "bold",
+      color = "#993333",
+      size = 10,
+      angle = 90
+    ),
+    axis.text.y = element_text(
+      face = "bold",
+      color = "#993333",
+      size = 10,
+      angle = 0
+    )
+  ) +
+  ggtitle("Frequency distribution of CCAS2 by pet") +
+  labs(y = "Frequency of Responces", x = "Having a pet/animal gives me something to care for")
+
+ggplot(CCAS2, aes(
+  fill = (CCAS2),
+  y = Frequency,
+  x = MostAttach
+)) +
+  geom_bar(position = "fill", stat = "identity") +
+  theme(
+    axis.text.x = element_text(
+      face = "bold",
+      color = "#993333",
+      size = 10,
+      angle = 90
+    ),
+    axis.text.y = element_text(
+      face = "bold",
+      color = "#993333",
+      size = 10,
+      angle = 0
+    )
+  ) +
+  #geom_text(aes(label=Frequency), position=position_dodge(width=0.9), vjust=-0.25)+
+  ggtitle("Frequency distribution of ownership time  by pet") +
+  labs(y = "Freqency of Responces", x = "Having a pet/animal gives me something to care for?" )
+
+CCAS2.fit = glm(CCAS2 ~ MostAttach, family = binomial, data =
+                       turk2)
+kable(summary(CCAS2.fit)$coef, digits = 2)
+
+```
+
+
+
+
+
