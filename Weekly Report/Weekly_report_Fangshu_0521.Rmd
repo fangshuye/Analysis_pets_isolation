@@ -1,0 +1,215 @@
+---
+title: "Weekly report"
+author: "Fangshu Ye"
+date: "5/21/2020"
+output:
+  pdf_document: default
+  html_notebook: default
+header-includes:
+ \usepackage{float}
+ \floatplacement{figure}{H}
+ \usepackage{xcolor}
+---
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = FALSE)
+```
+
+### 0. What I did this week
+- Finished the first part our analysis (**data checking**)
+- Started to do the third part: **Cat owners versus dogs owners**
+
+### 1. Data Checking
+As I mentioned in the email, I didn't see much difference between the frequency distribution of demographic information of people who completed once and twice. 
+```{r,echo=FALSE,message=FALSE,warning=FALSE}
+rm(list = ls())
+setwd('/Users/fangshu/Desktop/research/Analysis_pets_isolation/COVIDandPETS-master')
+library(dplyr)
+library(ggplot2)
+library(knitr)
+rawdata1 <- read.csv("wave1_cleaned_0520.csv")
+rawdata2 <- read.csv("wave2_cleaned_0520.csv")
+```
+
+```{r,echo=FALSE}
+workerid_twice <- intersect(rawdata1$workerId,rawdata2$workerId)
+demo_info1 <- data.frame(select(rawdata1,workerId,
+                             age,income))
+demo_info2 <- data.frame(select(rawdata2,workerId,
+                                age,income))
+demo_info2 <- demo_info2 %>% 
+  filter(!(workerId %in% workerid_twice))
+demo_info <- rbind(demo_info1,demo_info2)
+demo_info <- demo_info %>%
+  mutate(income=as.factor(income)) %>%
+  mutate(num=ifelse(workerId %in% workerid_twice,"twice","once")) %>%
+  mutate(num=as.factor(num))
+levels(demo_info$income) <- c("Less than $10,000","$90,000 to $99,999","$100,000 to $149,999","$150,000 or more",
+                            "$10,000 to $19,999","$20,000 to $29,999","$30,000 to $39,999",
+                            "$40,000 to $49,999","$50,000 to $59,999","$60,000 to $69,999","$70,000 to $79,999",
+                            "$80,000 to $89,999")
+```
+
+```{r age,echo=FALSE}
+ggplot(demo_info, aes(x=age)) + geom_histogram(binwidth=1) + facet_grid(num~.,scales="free_y")+
+  ggtitle("Frequency distribution of volunteers for once and twice, by age")
+```
+
+```{r income,echo=FALSE}
+ggplot(demo_info, aes(x=income)) + geom_bar() + facet_grid(num~.,scales="free_y")+
+  theme(axis.title.x=element_blank(), 
+        axis.text.x =element_text(angle = 90),
+        #axis.ticks.x=element_blank(),
+        legend.position = c(.3,.7)
+        #legend.text = element_text(size = 6),
+        ) + 
+  ggtitle("Frequency distribution of volunteers for once and twice, \n by entire household income in (previous year) before taxes")
+```
+
+### 2. Cat owners versus dogs owners
+
+###### The following analysis is on people who responded twice and have consistent data for age and gender
+#### 2.1 Common questions for wave1 and wave2
+
+
+Our interested outcomes are listed below:
+
+- **Compliance** (Yes:1;No:0) : Does your pet/companion animal(s) influence your compliance with quarantine recommendations and requirements in your region?
+- **Interact** (Yes:1;No:0) : Has COVID-19 affected your normal activities and interactions with your pet/companion animal(s)?
+- **Plans** (Yes:1;No:0): Since the COVID-19 outbreak, have you made plans for caring for your pet/companion animal(s) should you become sick and unable to care for them?
+- **PlansWho** (1-7:Family member; Friend; Neighbor; Animal care service provider; boarding facility; Veterinary clinic; Other): Who did you discuss this with?
+- **Concern**(1-5: Not at all concerned to Extremely concerned): Overall, how concerned are you about your ability to care for your pets/companion animal(s)?
+- **CCAS1-13**: (1-7: Strongly disagree to strongly agree): Question related to comfort/safe/needed/pleasurable that animal/pet provide.
+
+\newpage
+###### Here we take **Interact** for example:
+```{r,echo=FALSE}
+rawdata1 <- rawdata1 %>%
+  filter(workerId %in% workerid_twice) %>%
+  filter(PetOwner==1) %>%
+  filter(MostAttach %in% c(1,2))
+rawdata2 <- rawdata2 %>%
+  filter(workerId %in% workerid_twice)%>%
+  filter(PetOwner==1) %>%
+  filter(MostAttach %in% c(1,2))
+```
+
+```{r,echo=FALSE}
+wave1 <- data.frame(select(rawdata1,workerId,MostAttach,
+                           age,gender,ethnic,ed,income, married,hhsize, children, religion,
+                           Compliance,Interact,Plans,PlansWho,Concern,CCAS1,CCAS2,CCAS3,CCAS4,CCAS5,
+                           CCAS6,CCAS7,CCAS8,CCAS9,CCAS10,CCAS11,CCAS12,CCAS13))
+wave1$time <- rep("T1",nrow(wave1))
+wave2 <- data.frame(select(rawdata2,workerId,MostAttach,
+                           age,gender,ethnic,ed,income, married,hhsize, children, religion,
+                           Compliance,Interact,Plans,PlansWho,Concern,CCAS1,CCAS2,CCAS3,CCAS4,CCAS5,
+                           CCAS6,CCAS7,CCAS8,CCAS9,CCAS10,CCAS11,CCAS12,CCAS13))
+                           # NonVetService,NonVetLessFreq,WhyNonVetLessFreq,
+                           # VetVisit,VetVisitFreq,WhyVetLessFreq,
+                           # PetHealth,PetHealthCovid))
+wave2$time <- rep("T2",nrow(wave2))
+alldata <- rbind(wave1,wave2)
+cols <- colnames(alldata)[-3]
+alldata[cols] <- lapply(alldata[cols], factor) 
+levels(alldata$MostAttach) <- c("Dog","Cat")
+levels(alldata$gender) <- c('Male','Female','Other')
+alldata$time <- as.factor(alldata$time)
+```
+
+Let's take a look at our data size:
+(**Time** represents different time points, "T1" is wave1; "T2" is wave2)
+```{r wave1+2 Interact plot label data,echo=FALSE,comment=NA}
+sumdata1 <- alldata %>%
+  group_by(time,MostAttach) %>%
+  summarise(count = n())
+countsum <- rep(sumdata1$count,each=2)
+sumdata2 <- alldata %>%
+  group_by(time,MostAttach,Interact) %>%
+  summarise(count = n())
+sumdata2$percent <- sumdata2$count/countsum
+sumdata2[,-5]
+```
+```{r wave1+2 Interact plot}
+ggplot(sumdata2, aes(x=MostAttach,y=percent,fill=Interact))+geom_col(width = 0.5)+facet_grid(time~.)+
+  geom_text(aes(label = scales::percent(percent)),position = position_stack(vjust = .5))+ 
+  ggtitle("Percentage of volunteers for different most attach pet(Dog/Cat) by time")
+```
+
+
+##### 2.1.1 Interact ~ MostAttach + age + gender when time="T1"
+```{r wave1 Interact model,comment=NA}
+# Has COVID-19 affected your normal activities and interactions with your pet/companion animal(s)?
+# 0: No; Yes: 1
+m1 <- glm(Interact ~ MostAttach + age + gender, data = alldata[alldata$time=="T1",], family = "binomial")
+coef1 <- summary(m1)$coef
+coef1
+```
+Holding age and gender constant, the odd of COVID-19 affected their normal activities and interactions with Cat is **`r round(exp(coef1[2,1]),2)`** times those with Dog.
+
+##### 2.1.2 Interact ~ MostAttach + age + gender when time="T2"
+```{r wave2 Interact model,comment=NA}
+# Has COVID-19 affected your normal activities and interactions with your pet/companion animal(s)?
+# 0: No; Yes: 1
+m2 <- glm(Interact ~ MostAttach + age + gender, data = alldata[alldata$time=="T2",], family = "binomial")
+coef2 <-summary(m2)$coef
+coef2
+```
+Holding age and gender constant, the odd of COVID-19 affected their normal activities and interactions with Cat is **`r round(exp(coef2[2,1]),2)`** times those with Dog.
+
+##### 2.1.3 Interact ~ MostAttach + age + gender + time 
+```{r wave1+2 Interact model,comment=NA}
+# Has COVID-19 affected your normal activities and interactions with your pet/companion animal(s)?
+# 0: No; Yes: 1
+m3 <- glm(Interact ~ MostAttach + age + gender + time, data = alldata, family = "binomial")
+coef3 <-summary(m3)$coef
+coef3
+```
+
+\textcolor{red}{Q1:} Do we need to add more covariates? age, gender
+
+\textcolor{red}{Q2:} How to deal with outcomes **CCAS1-13**
+
+- My pet/animal makes me play and laugh
+- Having a pet/animal gives me something to love
+- I get more exercise because of my pet/animal
+- I get comfort from touching my pet/animal
+- My pet/animal makes me feel needed
+- My pet/animal is a source of constancy in my life
+- ...
+
+
+#### 2.2 Unique questions for wave2
+Additional interested outcomes for wave2 are listed below:
+
+- **\textcolor{blue}{NonVetService}** (Yes:1;No:0) : In the past 12 months have you used an animal care service that does NOT normally require a veterinarian?
+- **\textcolor{blue}{NonVetLessFreq}** (Yes:1;No:0) : Thinking about the time since the COVID-19 outbreak began, have you used any of these non-veterinary services less frequently than before the outbreak began?
+- **\textcolor{blue}{WhyNonVetLessFreq}** (1-7): Which of the following best describes why you are using these services less frequently?
+- **\textcolor{teal}{VetVisit}** (Yes:1;No:0): In the past 12 months, have you visited a veterinarian for preventative care for your pet? 
+- **\textcolor{teal}{VetLessFreq}** (Yes:1;No:0) : Thinking about the time since the COVID-19 outbreak began, have you used these preventative veterinary services less frequently than before the outbreak began?
+- **\textcolor{teal}{WhyVetLessFreq}** (1-7): Which of the following best describes why you used these services less frequently?
+- **\textcolor{purple}{PetHealth}**(Yes:1;No:0): Thinking about the time since the COVID-19 outbreak began, has your pet had any health issues (e.g. been sick or injured) that required a veterinarian? 
+- **\textcolor{purple}{PetHealthCovid}**: (Yes:1;No:0): Did the COVID-19 outbreak impact how you dealt with this health issue(s)?
+
+```{r,echo=FALSE}
+wave2 <- data.frame(select(rawdata2,workerId,MostAttach,
+                           age,gender,#ethnic,ed,income, married,hhsize, children, religion,
+                           NonVetService,NonVetLessFreq,WhyNonVetLessFreq,
+                           VetVisit,VetVisitFreq,WhyVetLessFreq,
+                           PetHealth,PetHealthCovid))
+cols <- colnames(wave2)[-3]
+wave2[cols] <- lapply(wave2[cols], factor) 
+levels(wave2$MostAttach) <- c("Dog","Cat")
+levels(wave2$gender) <- c('Male','Female','Other')
+```
+
+Take a look at the dataset:
+```{r,echo=FALSE,comment=NA}
+wave2[1:5,]
+```
+Here are the summary table:
+```{r,echo=FALSE,comment=NA}
+lapply(wave2[,5:12], table)
+```
+
+\textcolor{red}{Q3:} How to deal with these relevant outcomes? Select several of them to analyze?
+
+

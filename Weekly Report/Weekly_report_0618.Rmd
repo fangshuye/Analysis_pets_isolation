@@ -1,0 +1,127 @@
+---
+title: "glmer in R and glimmix in SAS"
+output: pdf_document
+header-includes:
+ \usepackage{amssymb,amsmath,latexsym,amsfonts,amsthm,float,makecell}
+ \floatplacement{figure}{H}
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = FALSE,message=FALSE,warning=FALSE,comment = NA)
+```
+
+### 1. Compliance in Pet-Covid project
+
+#### 1.1 Laplace Approximation (default method in R)
+
+#####  R code and result
+```{r, eval=F, echo=T}
+m <- glmer(Compliance ~ MostAttach + time +(1|workerId), data = alldata, family = "binomial")
+```
+
+![](/Users/fangshu/Desktop/research/Analysis_pets_isolation/Compliance_mixed_logistic/result/R_result_1.1.png){width=450px}
+
+
+##### SAS code and result
+```{r, eval=F, echo=T}
+proc glimmix data=set1 method=laplace;
+class workerId MostAttach time(ref='1') Compliance(ref='0');
+model Compliance = MostAttach time /s dist=binary link=logit; 
+random intercept/subject=workerId;
+run; 
+```
+
+![](/Users/fangshu/Desktop/research/Analysis_pets_isolation/Compliance_mixed_logistic/result/SAS_result_1.1.png){width=450px}
+
+#### 1.2 Adaptive Quadrature Method (Common method used in SAS)
+
+```{r, eval=F, echo=T}
+m <- glmer(Compliance ~ MostAttach + time +(1|workerId), data = alldata, family = "binomial",nAGQ = 7)
+```
+![](/Users/fangshu/Desktop/research/Analysis_pets_isolation/Compliance_mixed_logistic/result/R_result_1.2.png){width=450px}
+
+```{r, eval=F, echo=T}
+proc glimmix data=set1 method=quad(qpoints=7);
+class workerId MostAttach time(ref='1') Compliance(ref='0');
+model Compliance = MostAttach time /s dist=binary link=logit; 
+random intercept/subject=workerId;
+run;
+```
+
+![](/Users/fangshu/Desktop/research/Analysis_pets_isolation/Compliance_mixed_logistic/result/SAS_result_1.2.png){width=450px}
+
+\newpage
+
+### 2. Simulation data with only subject effect
+
+Here is my simulation process
+```{r, eval=F, echo=T}
+rm(list = ls())
+library(locfit)
+library(lme4)
+library(dplyr)
+set.seed(1)
+### data size
+total_cattle <- 800
+# fix and random effect
+var_subject <- 3.29
+PLC <- -0.3759
+TIL <- -1.547269
+# design 1
+sim_1 <- data.frame(subject=c(1:total_cattle))
+# animals are randomly allocated to receive trts
+sim_1$trt <-sample(rep(1:2,each=total_cattle/2),replace = F)
+################### part 2: simulate the outcome #######################
+sim_1$subject_effect=rnorm(total_cattle,0,sqrt(var_subject))
+sim_1 <- sim_1 %>%
+  mutate(trt_effect = ifelse(trt==1,PLC,TIL)) %>%  # added fixed effect column
+  mutate(added_effect = trt_effect+subject_effect) %>% # added all effect
+  mutate(risk = expit(added_effect))  # get the inverse of the logistic link function
+sim_1$y <- rbinom(n=total_cattle, size = 1, prob = sim_1$risk)
+```
+
+
+\newpage
+
+#### 2.1 Laplace Approximation
+
+```{r, eval=F, echo=T}
+sim_1 <- read.csv('/Users/fangshu/Desktop/research/design/simulation/check_value/sample_data.csv',header = T)
+sim_1$trt <- as.factor(sim_1$trt)
+sim_1$subject <- as.factor(sim_1$subject)
+sim_1$y <- as.factor(sim_1$y)
+m <- glmer(y ~ trt+(1|subject:trt), data=sim_1, family = "binomial")
+```
+![](/Users/fangshu/Desktop/research/Analysis_pets_isolation/Compliance_mixed_logistic/result/R_result_2.1.png){width=450px}
+
+```{r, eval=F, echo=T}
+proc glimmix data=set1 method=laplace;
+class subject trt(ref='1') y(ref='0');
+model y = trt /s dist=binary link=logit; 
+random intercept /subject = subject(trt);
+run;
+```
+
+![](/Users/fangshu/Desktop/research/Analysis_pets_isolation/Compliance_mixed_logistic/result/SAS_result_2.1.png){width=450px}
+
+\newpage
+
+#### 2.2 Adaptive Quadrature Method
+
+```{r, eval=F, echo=T}
+m <- glmer(y ~ trt+(1|subject:trt), data=sim_1, family = "binomial",nAGQ = 7)
+```
+
+![](/Users/fangshu/Desktop/research/Analysis_pets_isolation/Compliance_mixed_logistic/result/R_result_2.2.png){width=450px}
+
+
+```{r, eval=F, echo=T}
+proc glimmix data=set1 method=quad(qpoints=7);
+class subject trt(ref='1') y(ref='0');
+model y = trt /s dist=binary link=logit; 
+random intercept /subject = subject(trt);
+run;  
+```
+
+![](/Users/fangshu/Desktop/research/Analysis_pets_isolation/Compliance_mixed_logistic/result/SAS_result_2.2.png){width=450px}
+

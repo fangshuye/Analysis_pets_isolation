@@ -1,0 +1,422 @@
+---
+title: "Weekly report"
+author: "Fangshu Ye"
+date: "6/1/2020"
+output: 
+ pdf_document:
+   number_sections: yes
+   toc: yes
+header-includes:
+ \usepackage{amssymb,amsmath,latexsym,amsfonts,amsthm,float,xcolor,makecell}
+ \floatplacement{figure}{H}
+---
+
+
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = FALSE,message=FALSE,warning=FALSE,comment = NA)
+```
+
+\newpage
+\section{Design}
+\subsection{Design 1}
+![](/Users/fangshu/Desktop/research/design/design1.png){width=450px}
+
+For $i=1,2$, $j=1,\cdots,n_i$, let $y_{ij}$ be the outcome for $j$th animal which received treatment $i$
+
+$$y_{ij}=\mu_i+\epsilon_{ij}$$
+where $\mu_i$ terms are fixed parameters .
+
+\subsection{Design 2}
+![](/Users/fangshu/Desktop/research/design/design2.png){width=450px}
+
+For $i=1,2$, $j=1,2$, $k=1,\cdots,n_{ij}$ and $l=1,\cdots, n_{ijk}$, let $y_{ijkl}$ be the outcome for $l$th animal in $k$th cohort of $j$th pen in treatment group $i$.
+
+$$y_{ijkl}=\mu_i+p_{ij}+c_{ijk}+\epsilon_{ijkl}$$
+where $\mu_i$ terms are fixed parameters and the other terms are random effects.
+
+
+\subsection{Design 3}
+![](/Users/fangshu/Desktop/research/design/design3.png){width=450px}
+
+For $i=1,2$, $j=1,2$ and $k=1,\cdots,n_{ij}$, let $y_{ijk}$ be the outcome for $k$th animal which placed in $j$th pen of treatment group $i$.
+
+$$y_{ijk}=\mu_i+p_{ij}+\epsilon_{ijk}$$
+where $\mu_i$ terms are fixed parameters and the other terms are random effects.
+
+\subsection{Design 4}
+![](/Users/fangshu/Desktop/research/design/design4.png){width=450px}
+
+For $i=1,2$, $j=1,2$ and $k=1,\cdots,n_{ij}$, let $y_{ijk}$ be the outcome for $k$th animal which placed in $j$th pen of treatment group $i$.
+
+$$y_{ijk}=\mu_i+p_{ij}+\epsilon_{ijk}$$
+where $\mu_i$ terms are fixed parameters and the other terms are random effects.
+\newpage
+\section{Pet Owner Effect}
+
+**PetOwner**(1:Yes; 0:No) : Do you currently have or share responsibility for a pet/companion animal?
+
+```{r data prep}
+rm(list = ls())
+setwd('/Users/fangshu/Desktop/research/Analysis_pets_isolation/COVIDandPETS-master/cleaned_data/')
+library(dplyr)
+library(ggplot2)
+library(lme4)
+library(knitr)
+library(kableExtra)
+library(ordinal)
+library(formattable)
+library(gridExtra)
+rawdatalist <- list()
+for (d in 1:2) {
+  rawdatalist[[d]] <- read.csv(paste0("wave",d,"_cleaned_0527.csv"))
+}
+# x: pet owner yes or no ('PetOwner')
+# y: Kessler 1 -10, Gad 1-7, Lonely 1-3, Risk 1-3, psychproblem, and genhealth
+# use ordinal logistic regression
+
+# Kessler 1 -10:Generalized Psychological Distress
+# Gad 1-7: Generalized Anxiety Disorder
+# Lonely 1-3: Loneliness Short Form
+# Risk 1-3: COVID Risk Perceptions
+# psychproblem, and genhealth
+
+workerid_twice <- intersect(rawdatalist[[1]]$workerId,rawdatalist[[2]]$workerId)
+alldata <- c()
+for (d in 1:2) {
+  
+  wave <- data.frame(select(rawdatalist[[d]],workerId,PetOwner,
+                           Kessler1,Kessler2,Kessler3,Kessler4,Kessler5,Kessler6,Kessler7,Kessler8,Kessler9,Kessler10,Gad1,Gad2,Gad3,Gad4,Gad5,Gad6,Gad7,Lonely1,Lonely2,Lonely3,Risk1,Risk2,Risk3,
+                           psychproblem, genhealth))
+  timepoint <- paste0("T",d)
+  
+  wave$time <- rep(timepoint,nrow(wave))
+  
+  alldata <- rbind(alldata,wave)
+}
+alldata <- alldata %>%
+  mutate(num=ifelse(workerId %in% workerid_twice,"twice","once")) 
+
+cols <- colnames(alldata)
+alldata[cols] <- lapply(alldata[cols], factor) 
+levels(alldata$PetOwner) <- c("No","Yes")
+```
+
+
+Data size:
+```{r data size}
+table(alldata$time)
+```
+
+\subsection{Psychproblem: Do you have a history of mental health problems?}
+
+```{r psychproblem plot}
+sumdata1 <- alldata %>%
+  group_by(time,PetOwner) %>%
+  summarise(count = n())
+
+sumdata2 <- alldata %>%
+  group_by(time,PetOwner,psychproblem) %>%
+  summarise(percent = n())
+
+sumdata2 <- merge(sumdata2,sumdata1,by=c("time","PetOwner"))
+sumdata2$percent <- sumdata2$percent/sumdata2$count
+
+ggplot(sumdata2, aes(x=PetOwner,y=percent,fill=psychproblem))+geom_col(width = 0.5)+facet_grid(time~.)+
+  geom_text(aes(label = scales::percent(percent)),position = position_stack(vjust = .5))
+```
+
+
+```{r psychproblem model}
+m1 <- glm(psychproblem ~ PetOwner, data = alldata[alldata$time=="T1",], family = "binomial")
+m2 <- glm(psychproblem ~ PetOwner, data = alldata[alldata$time=="T2",], family = "binomial")
+m3 <- glmer(psychproblem ~ PetOwner + time + (1|workerId), data = alldata, family = "binomial")
+m4 <- glmer(psychproblem ~ PetOwner + time + PetOwner*time + (1|workerId), data = alldata, family = "binomial")
+coef <- rbind(summary(m1)$coef[-1,],summary(m2)$coef[-1,],summary(m3)$coef[-1,],summary(m4)$coef[-1,])
+row.names(coef)[1:2] <- c("PetOwnerYes","PetOwnerYes")
+colnames(coef)[4] <- "pvalue"
+
+colns <- colnames(coef)
+rowns <- rownames(coef)
+coef <- coef %>%
+  round(3) %>%
+  as.data.frame() %>%
+  mutate(Model=rowns) %>%
+  select(Model,colns[-3])
+
+coef %>%
+  mutate(pvalue = cell_spec(pvalue, "latex", color = ifelse(pvalue < 0.05, "red", "black"))) %>%
+  kable("latex", escape = F, booktabs = T, linesep = "") %>%
+  kable_styling()%>%
+  pack_rows("T1: psychproblem ~ PetOwner", 1, 1) %>%
+  pack_rows("T2: psychproblem ~ PetOwner", 2, 2) %>%
+  pack_rows("T1+T2: psychproblem ~ PetOwner + time + (1|workerId)", 3, 4) %>%
+  pack_rows("T1+T2: psychproblem ~ PetOwner + time + PetOwner*time + (1|workerId)", 5, 7)
+```
+\newpage
+\subsection{Genhealth : How would you describe your general health lately?}
+
+```{r genhealth plot}
+sumdata1 <- alldata %>%
+  group_by(time,PetOwner) %>%
+  summarise(count = n())
+
+sumdata2 <- alldata %>%
+  group_by(time,PetOwner,genhealth) %>%
+  summarise(percent = n())
+
+sumdata2 <- merge(sumdata2,sumdata1,by=c("time","PetOwner"))
+sumdata2$percent <- sumdata2$percent/sumdata2$count
+levels(sumdata2$genhealth) <- c("Bad","Not so good",
+                               "So So","Good",
+                               "Excellent")
+
+ggplot(sumdata2, aes(x=PetOwner,y=percent,fill=genhealth))+geom_col(width = 0.5)+facet_grid(time~.)+
+  geom_text(aes(label = scales::percent(percent)),position = position_stack(vjust = .5))
+```
+
+
+```{r genhealth model1}
+m <- clmm(genhealth ~ PetOwner + time + (1|workerId), data = alldata)
+coef_4 <- summary(m)$coefficients
+coef <- coef_4[(nrow(coef_4)-1):nrow(coef_4),]
+coef %>%
+  kable("latex", escape = F, booktabs = T, linesep = "",
+        caption = "Ordinal Logistic Regression: genhealth ~ PetOwner + time + (1|workerId)")%>%
+  kable_styling(latex_options = "hold_position")
+```
+
+\subsection{Kessler 1-10}
+
+
+```{r Kessler3 plot,fig.height=4,fig.width=6, fig.align = "center"}
+sumdata1 <- alldata %>%
+  group_by(time,PetOwner) %>%
+  summarise(count = n())
+
+sumdata2 <- alldata %>%
+  group_by(time,PetOwner,Kessler3) %>%
+  summarise(percent = n())
+
+sumdata2 <- merge(sumdata2,sumdata1,by=c("time","PetOwner"))
+sumdata2$percent <- sumdata2$percent/sumdata2$count
+levels(sumdata2$Kessler3) <- c("None of the time","A little of the time",
+                               "Some of the time","Most of the time",
+                               "All of the time")
+
+ggplot(sumdata2, aes(x=PetOwner,y=percent,fill=Kessler3))+geom_col(width = 0.5)+facet_grid(time~.)+
+  geom_text(aes(label = scales::percent(percent)),position = position_stack(vjust = .5))+
+  ggtitle("Kessler3:How often did you feel so nervous that nothing could calm you down?")
+```
+
+```{r Kessler4 plot,fig.height=4,fig.width=6, fig.align = "center"}
+sumdata1 <- alldata %>%
+  group_by(time,PetOwner) %>%
+  summarise(count = n())
+
+sumdata2 <- alldata %>%
+  group_by(time,PetOwner,Kessler4) %>%
+  summarise(percent = n())
+
+sumdata2 <- merge(sumdata2,sumdata1,by=c("time","PetOwner"))
+sumdata2$percent <- sumdata2$percent/sumdata2$count
+levels(sumdata2$Kessler4) <- c("None of the time","A little of the time",
+                               "Some of the time","Most of the time",
+                               "All of the time")
+
+ggplot(sumdata2, aes(x=PetOwner,y=percent,fill=Kessler4))+geom_col(width = 0.5)+facet_grid(time~.)+
+  geom_text(aes(label = scales::percent(percent)),position = position_stack(vjust = .5))+
+  ggtitle("Kessler4: How often did you feel hopeless?")
+```
+
+
+```{r Kessler 1-10 model}
+coef <- c()
+for(q in 1:10){
+  formula <- as.formula(paste0("Kessler",q,"~","PetOwner + time + (1|workerId)"))
+  m <- clmm(formula, data = alldata)
+  coef_q <- summary(m)$coefficients
+  coef <- rbind(coef,coef_q[(nrow(coef_q)-1):nrow(coef_q),])
+}
+colnames(coef)[4] <- "pvalue"
+
+colns <- colnames(coef)
+rowns <- rownames(coef)
+coef <- coef %>%
+  round(3) %>%
+  as.data.frame() %>%
+  mutate(Model=rowns) %>%
+  select(Model,colns[-3])
+
+coef %>%
+  mutate(pvalue = cell_spec(pvalue, "latex", color = ifelse(pvalue < 0.05, "red", "black"))) %>%
+  kable("latex", escape = F, booktabs = T, linesep = "",caption = "Ordinal Logistic Regression: Kessler ~ PetOwner + time + (1|workerId)") %>%
+  kable_styling()%>%
+  pack_rows("Kessler1: how often did you feel tired for no good reason?", 1, 2) %>%
+  pack_rows("Kessler2: how often did you feel nervous?", 3, 4) %>%
+  pack_rows("Kessler3: how often did you feel so nervous that nothing could calm you down?", 5, 6) %>%
+  pack_rows("Kessler4: how often did you feel hopeless?", 7, 8) %>%
+  pack_rows("Kessler5: how often did you feel restless or fidgety?", 9, 10) %>%
+  pack_rows("Kessler6: how often did you feel so restless that you could not sit still?", 11, 12) %>%
+  pack_rows("Kessler7: how often did you feel depressed?", 13, 14) %>%
+  pack_rows("Kessler8: how often did you feel so depressed that nothing could cheer you up?", 15, 16) %>%
+  pack_rows("Kessler9: how often did you feel that everything was an effort?", 17, 18) %>%
+  pack_rows("Kessler10: how often did you feel worthless?", 19, 20)
+```
+
+\newpage
+
+\subsection{Grad 1-7}
+
+```{r Gad4 plot,fig.height=4,fig.width=6, fig.align = "center"}
+sumdata1 <- alldata %>%
+  group_by(time,PetOwner) %>%
+  summarise(count = n())
+
+sumdata2 <- alldata %>%
+  group_by(time,PetOwner,Gad4) %>%
+  summarise(percent = n())
+
+sumdata2 <- merge(sumdata2,sumdata1,by=c("time","PetOwner"))
+sumdata2$percent <- sumdata2$percent/sumdata2$count
+levels(sumdata2$Gad4) <- c("None of the time","A little of the time",
+                               "Some of the time","Most of the time",
+                               "All of the time")
+
+ggplot(sumdata2, aes(x=PetOwner,y=percent,fill=Gad4))+geom_col(width = 0.5)+facet_grid(time~.)+
+  geom_text(aes(label = scales::percent(percent)),position = position_stack(vjust = .5))+
+  ggtitle("Gad4:How often have you had trouble relaxing?")
+```
+
+```{r Gad 1-7 model}
+coef <- c()
+for(q in 1:7){
+  formula <- as.formula(paste0("Gad",q,"~","PetOwner + time + (1|workerId)"))
+  m <- clmm(formula, data = alldata)
+  coef_q <- summary(m)$coefficients
+  coef <- rbind(coef,coef_q[(nrow(coef_q)-1):nrow(coef_q),])
+}
+colnames(coef)[4] <- "pvalue"
+
+colns <- colnames(coef)
+rowns <- rownames(coef)
+coef <- coef %>%
+  round(3) %>%
+  as.data.frame() %>%
+  mutate(Model=rowns) %>%
+  select(Model,colns[-3])
+
+coef %>%
+  mutate(pvalue = cell_spec(pvalue, "latex", color = ifelse(pvalue < 0.05, "red", "black"))) %>%
+  kable("latex", escape = F, booktabs = T, linesep = "",caption = "Ordinal Logistic Regression: Grad ~ PetOwner + time + (1|workerId)") %>%
+  kable_styling(latex_options = "hold_position")%>%
+  pack_rows("Gad1: how often have you been bothered by feeling nervous, anxious or on edge?", 1, 2) %>%
+  pack_rows("Gad2: how often have you been bothered by not being able to stop or control worrying?", 3, 4) %>%
+  pack_rows("Gad3: how often have you been bothered by worrying too much about different things?", 5, 6) %>%
+  pack_rows("Gad4: how often have you had trouble relaxing?", 7, 8) %>%
+  pack_rows("Gad5: how often have you been so restless that it's hard to sit still?", 9, 10) %>%
+  pack_rows("Gad6: how often have you become easily annoyed or irritable?", 11, 12) %>%
+  pack_rows("Gad7: how often have you been bothered by feeling afraid as if something awful might happen?", 13, 14) 
+```
+
+\newpage
+
+\subsection{Lonely 1-3}
+```{r Lonely1 plot}
+sumdata1 <- alldata %>%
+  group_by(time,PetOwner) %>%
+  summarise(count = n())
+
+sumdata2 <- alldata %>%
+  group_by(time,PetOwner,Lonely1) %>%
+  summarise(percent = n())
+
+sumdata2 <- merge(sumdata2,sumdata1,by=c("time","PetOwner"))
+sumdata2$percent <- sumdata2$percent/sumdata2$count
+levels(sumdata2$Lonely1) <- c("None of the time","A little of the time",
+                               "Some of the time","Most of the time",
+                               "All of the time")
+
+ggplot(sumdata2, aes(x=PetOwner,y=percent,fill=Lonely1))+geom_col(width = 0.5)+facet_grid(time~.)+
+  geom_text(aes(label = scales::percent(percent)),position = position_stack(vjust = .5))+
+  ggtitle("Lonely1: How often did you feel you lack companionship?")
+```
+
+```{r Lonely 1-3 model}
+coef <- c()
+for(q in 1:3){
+  formula <- as.formula(paste0("Lonely",q,"~","PetOwner + time + (1|workerId)"))
+  m <- clmm(formula, data = alldata)
+  coef_q <- summary(m)$coefficients
+  coef <- rbind(coef,coef_q[(nrow(coef_q)-1):nrow(coef_q),])
+}
+colnames(coef)[4] <- "pvalue"
+
+colns <- colnames(coef)
+rowns <- rownames(coef)
+coef <- coef %>%
+  round(3) %>%
+  as.data.frame() %>%
+  mutate(Model=rowns) %>%
+  select(Model,colns[-3])
+
+coef %>%
+  mutate(pvalue = cell_spec(pvalue, "latex", color = ifelse(pvalue < 0.05, "red", "black"))) %>%
+  kable("latex", escape = F, booktabs = T, linesep = "",caption = "Ordinal Logistic Regression: Lonely ~ PetOwner + time + (1|workerId)") %>%
+  kable_styling(latex_options = "hold_position")%>%
+  pack_rows("Lonely1: how often did you feel you lack companionship?", 1, 2) %>%
+  pack_rows("Lonely2: how often did you feel left out?", 3, 4) %>%
+  pack_rows("Lonely3: how often did you feel isolated from others?", 5, 6)
+```
+
+\pagebreak
+
+\subsection{Risk 1-3}
+```{r Risk2 plot}
+sumdata1 <- alldata %>%
+  group_by(time,PetOwner) %>%
+  summarise(count = n())
+
+sumdata2 <- alldata %>%
+  group_by(time,PetOwner,Risk2) %>%
+  summarise(percent = n())
+
+sumdata2 <- merge(sumdata2,sumdata1,by=c("time","PetOwner"))
+sumdata2$percent <- sumdata2$percent/sumdata2$count
+levels(sumdata2$Risk2) <- c("Not at all serious","Slightly serious",
+                               "Moderately serious","Very serious",
+                               "Extremely serious")
+
+ggplot(sumdata2, aes(x=PetOwner,y=percent,fill=Risk2))+geom_col(width = 0.5)+facet_grid(time~.)+
+  geom_text(aes(label = scales::percent(percent)),position = position_stack(vjust = .5))+
+  ggtitle("Risk2:How serious do you think COVID-19 would be if you contracted it?")
+```
+
+```{r Risk 1-3 model}
+coef <- c()
+for(q in 1:3){
+  formula <- as.formula(paste0("Risk",q,"~","PetOwner + time + (1|workerId)"))
+  m <- clmm(formula, data = alldata)
+  coef_q <- summary(m)$coefficients
+  coef <- rbind(coef,coef_q[(nrow(coef_q)-1):nrow(coef_q),])
+}
+colnames(coef)[4] <- "pvalue"
+
+colns <- colnames(coef)
+rowns <- rownames(coef)
+coef <- coef %>%
+  round(3) %>%
+  as.data.frame() %>%
+  mutate(Model=rowns) %>%
+  select(Model,colns[-3])
+
+coef %>%
+  mutate(pvalue = cell_spec(pvalue, "latex", color = ifelse(pvalue < 0.05, "red", "black"))) %>%
+  kable("latex", escape = F, booktabs = T, linesep = "",caption = "Ordinal Logistic Regression: Risk ~ PetOwner + time + (1|workerId)") %>%
+  kable_styling(latex_options = "hold_position")%>%
+  pack_rows("Risk1:In your opinion, how likely is it that you will contract COVID-19?", 1, 2) %>%
+  pack_rows("Risk2:How serious do you think COVID-19 would be if you contracted it?", 3, 4) %>%
+  pack_rows("Risk3:How concerned are you about the COVID-19?", 5, 6)
+```
+
+

@@ -1,0 +1,391 @@
+---
+title: "Weekly report (Monday)"
+author: "Fangshu Ye"
+date: "5/25/2020"
+output:
+  html_document:
+    df_print: paged
+  html_notebook: default
+  pdf_document: default
+header-includes: \usepackage{float} 
+                 \usepackage{xcolor}
+---
+## Common questions for wave1 and wave2
+
+
+Our interested outcomes are listed below:
+
+- **Compliance** (Yes:1;No:0) : Does your pet/companion animal(s) influence your compliance with quarantine recommendations and requirements in your region?
+- **Interact** (Yes:1;No:0) : Has COVID-19 affected your normal activities and interactions with your pet/companion animal(s)?
+- **Plans** (Yes:1;No:0): Since the COVID-19 outbreak, have you made plans for caring for your pet/companion animal(s) should you become sick and unable to care for them?
+- **PlansWho** (1-7:Family member; Friend; Neighbor; Animal care service provider; boarding facility; Veterinary clinic; Other): Who did you discuss this with?
+- **Concern**(1-5: Not at all concerned to Extremely concerned): Overall, how concerned are you about your ability to care for your pets/companion animal(s)?
+- **CCAS1-13**: (1-7: Strongly disagree to strongly agree): Question related to comfort/safe/needed/pleasurable that animal/pet provide.
+
+
+#### 1.1 Delete 14 people who responded twice and their most attach pet/animal is dog or cat but have inconsistent data for **MostAttach**
+
+#### 1.2 Determine using once or twice
+
+Here we take **Interact** for example:
+
+```{r input cleaned data,warning=FALSE,message=FALSE,comment=F,include=FALSE}
+rm(list = ls())
+setwd('/Users/fangshu/Desktop/research/Analysis_pets_isolation/COVIDandPETS-master/cleaned_data/')
+library(dplyr)
+library(ggplot2)
+library(lme4)
+library(knitr)
+library(kableExtra)
+rawdatalist <- list()
+for (d in 1:2) {
+  rawdatalist[[d]] <- read.csv(paste0("wave",d,"_cleaned_0524.csv"))
+}
+```
+
+
+```{r constract dataset for modeling, echo=FALSE}
+workerid_twice <- intersect(rawdatalist[[1]]$workerId,rawdatalist[[2]]$workerId)
+alldata <- c()
+for (d in 1:2) {
+  rawdatalist[[d]] <- rawdatalist[[d]] %>%
+    filter(PetOwner==1) %>%
+    filter(MostAttach %in% c(1,2))
+  
+  wave <- data.frame(select(rawdatalist[[d]],workerId,MostAttach,
+                           Compliance,Interact,Plans,PlansWho,Concern,CCAS1,CCAS2,CCAS3,CCAS4,CCAS5,
+                           CCAS6,CCAS7,CCAS8,CCAS9,CCAS10,CCAS11,CCAS12,CCAS13))
+  timepoint <- paste0("T",d)
+  
+  wave$time <- rep(timepoint,nrow(wave))
+  
+  alldata <- rbind(alldata,wave)
+}
+alldata <- alldata %>%
+  mutate(num=ifelse(workerId %in% workerid_twice,"twice","once")) 
+
+cols <- colnames(alldata)
+alldata[cols] <- lapply(alldata[cols], factor) 
+levels(alldata$MostAttach) <- c("Dog","Cat")
+```
+
+```{r wave1+2 once+twice Interact plot, echo=FALSE}
+sumdata1 <- alldata %>%
+  group_by(time,MostAttach) %>%
+  summarise(count = n())
+countsum <- rep(sumdata1$count,each=2)
+sumdata2 <- alldata %>%
+  group_by(time,MostAttach,Interact) %>%
+  summarise(percent = n())
+sumdata2$percent <- sumdata2$percent/countsum
+ggplot(sumdata2, aes(x=MostAttach,y=percent,fill=Interact))+geom_col(width = 0.5)+facet_grid(time~.)+
+  geom_text(aes(label = scales::percent(percent)),position = position_stack(vjust = .5))
+```
+
+```{r wave1+2 twice Interact plot, echo=FALSE}
+sumdata1 <- alldata %>%
+  filter(num=="twice") %>%
+  group_by(time,MostAttach) %>%
+  summarise(count = n())
+countsum <- rep(sumdata1$count,each=2)
+sumdata2 <- alldata %>%
+  filter(num=="twice") %>%
+  group_by(time,MostAttach,Interact) %>%
+  summarise(percent = n())
+sumdata2$percent <- sumdata2$percent/countsum
+ggplot(sumdata2, aes(x=MostAttach,y=percent,fill=Interact))+geom_col(width = 0.5)+facet_grid(time~.)+
+  geom_text(aes(label = scales::percent(percent)),position = position_stack(vjust = .5))
+```
+
+```{r wave1 Interact model, echo=FALSE}
+# Has COVID-19 affected your normal activities and interactions with your pet/companion animal(s)?
+# 0: No; Yes: 1
+m1 <- glm(Interact ~ MostAttach, data = alldata[alldata$time=="T1",], family = "binomial")
+m2 <- glm(Interact ~ MostAttach, data = alldata[which(alldata$time=="T1" & alldata$num=="twice"),], family = "binomial")
+coef <- rbind(summary(m1)$coef[2,],summary(m2)$coef[2,])
+row.names(coef) <- c("include both once and twice","only twice")
+coef %>%
+  kable(caption = "Coef of 'MostAttachCat', using WAVE1") %>%
+  kable_styling()
+```
+
+
+```{r wave2 Interact model, echo=FALSE}
+# Has COVID-19 affected your normal activities and interactions with your pet/companion animal(s)?
+# 0: No; Yes: 1
+m1 <- glm(Interact ~ MostAttach, data = alldata[alldata$time=="T2",], family = "binomial")
+m2 <- glm(Interact ~ MostAttach, data = alldata[which(alldata$time=="T2" & alldata$num=="twice"),], family = "binomial")
+coef <- rbind(summary(m1)$coef[2,],summary(m2)$coef[2,])
+row.names(coef) <- c("include both once and twice","only twice")
+coef %>%
+  kable(caption = "Coef of 'MostAttachCat', using WAVE2") %>%
+  kable_styling()
+```
+
+
+```{r wave1+2 Interact model, echo=FALSE}
+# Has COVID-19 affected your normal activities and interactions with your pet/companion animal(s)?
+# 0: No; Yes: 1
+m1 <- glmer(Interact ~ MostAttach + time + (1|workerId), data = alldata, family = "binomial")
+m2 <- glmer(Interact ~ MostAttach + time + (1|workerId), data = alldata[which(alldata$num=="twice"),], family = "binomial")
+
+coef <- rbind(summary(m1)$coef[-1,],summary(m2)$coef[-1,])
+coef %>%
+  kable(caption = "Coef of 'MostAttachCat' and 'timeT2', using WAVE1+WAVE2") %>%
+  kable_styling()%>%
+  pack_rows("include both once and twice", 1, 2) %>%
+  pack_rows("only twice", 3, 4)
+```
+
+**decide to use both "once" and "twice" data in the following analysis**
+
+#### 2.1 Compliance
+```{r Compliance plot, echo=FALSE}
+sumdata1 <- alldata %>%
+  group_by(time,MostAttach) %>%
+  summarise(count = n())
+countsum <- rep(sumdata1$count,each=2)
+sumdata2 <- alldata %>%
+  group_by(time,MostAttach,Compliance) %>%
+  summarise(percent = n())
+sumdata2$percent <- sumdata2$percent/countsum
+ggplot(sumdata2, aes(x=MostAttach,y=percent,fill=Compliance))+geom_col(width = 0.5)+facet_grid(time~.)+
+  geom_text(aes(label = scales::percent(percent)),position = position_stack(vjust = .5))
+```
+
+```{r Compliance model, echo=FALSE}
+m1 <- glm(Compliance ~ MostAttach, data = alldata[alldata$time=="T1",], family = "binomial")
+m2 <- glm(Compliance ~ MostAttach, data = alldata[alldata$time=="T2",], family = "binomial")
+m3 <- glmer(Compliance ~ MostAttach + time + (1|workerId), data = alldata, family = "binomial")
+m4 <- glmer(Compliance ~ MostAttach + time + MostAttach*time + (1|workerId), data = alldata, family = "binomial")
+coef <- rbind(summary(m1)$coef[-1,],summary(m2)$coef[-1,],summary(m3)$coef[-1,],summary(m4)$coef[-1,])
+row.names(coef)[1:2] <- c("MostAttachCat","MostAttachCat")
+coef %>%
+  kable() %>%
+  kable_styling()%>%
+  pack_rows("T1: Compliance ~ MostAttach", 1, 1) %>%
+  pack_rows("T2: Compliance ~ MostAttach", 2, 2) %>%
+  pack_rows("T1+T2: Compliance ~ MostAttach + time + (1|workerId)", 3, 4) %>%
+  pack_rows("T1+T2: Compliance ~ MostAttach + time + MostAttach*time + (1|workerId)", 5, 7)
+```
+
+#### 2.2 Interact
+```{r Interact plot, echo=FALSE}
+sumdata1 <- alldata %>%
+  group_by(time,MostAttach) %>%
+  summarise(count = n())
+countsum <- rep(sumdata1$count,each=2)
+sumdata2 <- alldata %>%
+  group_by(time,MostAttach,Interact) %>%
+  summarise(percent = n())
+sumdata2$percent <- sumdata2$percent/countsum
+ggplot(sumdata2, aes(x=MostAttach,y=percent,fill=Interact))+geom_col(width = 0.5)+facet_grid(time~.)+
+  geom_text(aes(label = scales::percent(percent)),position = position_stack(vjust = .5))
+```
+
+```{r Interact model, echo=FALSE}
+m1 <- glm(Interact ~ MostAttach, data = alldata[alldata$time=="T1",], family = "binomial")
+m2 <- glm(Interact ~ MostAttach, data = alldata[alldata$time=="T2",], family = "binomial")
+m3 <- glmer(Interact ~ MostAttach + time + (1|workerId), data = alldata, family = "binomial")
+coef <- rbind(summary(m1)$coef[-1,],summary(m2)$coef[-1,],summary(m3)$coef[-1,])
+row.names(coef)[1:2] <- c("MostAttachCat","MostAttachCat")
+coef %>%
+  kable() %>%
+  kable_styling()%>%
+  pack_rows("T1: Interact ~ MostAttach", 1, 1) %>%
+  pack_rows("T2: Interact ~ MostAttach", 2, 2) %>%
+  pack_rows("T1+T2: Interact ~ MostAttach + time + (1|workerId)", 3, 4)
+```
+
+#### 2.3 Plans
+```{r Plans plot, echo=FALSE}
+sumdata1 <- alldata %>%
+  group_by(time,MostAttach) %>%
+  summarise(count = n())
+sumdata2 <- alldata %>%
+  group_by(time,MostAttach,Plans) %>%
+  summarise(percent = n())
+sumdata2$percent <- sumdata2$percent/countsum
+ggplot(sumdata2, aes(x=MostAttach,y=percent,fill=Plans))+geom_col(width = 0.5)+facet_grid(time~.)+
+  geom_text(aes(label = scales::percent(percent)),position = position_stack(vjust = .5))
+```
+
+```{r Plans model, echo=FALSE}
+m1 <- glm(Plans ~ MostAttach, data = alldata[alldata$time=="T1",], family = "binomial")
+m2 <- glm(Plans ~ MostAttach, data = alldata[alldata$time=="T2",], family = "binomial")
+m3 <- glmer(Plans ~ MostAttach + time + (1|workerId), data = alldata, family = "binomial")
+m4 <- glmer(Plans ~ MostAttach + time + MostAttach*time + (1|workerId), data = alldata, family = "binomial")
+coef <- rbind(summary(m1)$coef[-1,],summary(m2)$coef[-1,],summary(m3)$coef[-1,],summary(m4)$coef[-1,])
+row.names(coef)[1:2] <- c("MostAttachCat","MostAttachCat")
+coef %>%
+  kable() %>%
+  kable_styling()%>%
+  pack_rows("T1: Plans ~ MostAttach", 1, 1) %>%
+  pack_rows("T2: Plans ~ MostAttach", 2, 2) %>%
+  pack_rows("T1+T2: Plans ~ MostAttach + time + (1|workerId)", 3, 4) %>%
+  pack_rows("T1+T2: Plans ~ MostAttach + time + MostAttach*time + (1|workerId)", 5, 7)
+```
+
+#### 2.4 PlansWho
+```{r PlansWho datasize}
+table(alldata$PlansWho)
+table(alldata$PlansWho,alldata$MostAttach)
+```
+```{r PlansWho plot, echo=FALSE}
+sumdata1 <- alldata %>%
+  filter(Plans==1) %>%
+  group_by(time,MostAttach) %>%
+  summarise(count = n())
+
+sumdata2 <- alldata %>%
+  filter(Plans==1) %>%
+  group_by(time,MostAttach,PlansWho) %>%
+  summarise(percent = n())
+
+sumdata2 <- merge(sumdata2,sumdata1,by=c("time","MostAttach"))
+sumdata2$percent <- sumdata2$percent/sumdata2$count
+# No 5,(Boarding facility)
+levels(sumdata2$PlansWho) <- c("Family member","Friend","Neighbor","Animal care service provider",
+                      "Veterinary clinic","Other")
+ggplot(sumdata2, aes(x=MostAttach,y=percent,fill=PlansWho))+geom_col(width = 0.5)+facet_grid(time~.)+
+  geom_text(aes(label = scales::percent(percent)),position = position_stack(vjust = .5))
+```
+
+
+#### 2.5 Concern
+##### 2.5.1 Animal Effect
+H0: The distributions of **Concern** are the same for people whose most attach pet is **dog** and people whose most attach pet is **cat** when only using **WAVE1**.
+```{r Concern T1, echo=FALSE}
+# 1-7: Strongly disagree to strongly agree
+# in T1, compare Dog and Cat effect
+dat_dog <- alldata[which(alldata$MostAttach=="Dog" & alldata$time=="T1"),"Concern"]
+dat_dog <- as.numeric(dat_dog)
+dat_cat <- alldata[which(alldata$MostAttach=="Cat" & alldata$time=="T1"),"Concern"]
+dat_cat <- as.numeric(dat_cat)
+wilcox.test(dat_dog, dat_cat, alternative = "two.sided")
+```
+
+H0: The distributions of **Concern** are the same for people whose most attach pet is **dog** and people whose most attach pet is **cat** when only using **WAVE2**.
+
+```{r Concern T2, echo=FALSE}
+# 1-7: Strongly disagree to strongly agree
+# in T1, compare Dog and Cat effect
+dat_dog <- alldata[which(alldata$MostAttach=="Dog" & alldata$time=="T2"),"Concern"]
+dat_dog <- as.numeric(dat_dog)
+dat_cat <- alldata[which(alldata$MostAttach=="Cat" & alldata$time=="T2"),"Concern"]
+dat_cat <- as.numeric(dat_cat)
+wilcox.test(dat_dog, dat_cat, alternative = "two.sided")
+```
+
+
+H0: The distributions of **Concern** are the same for people whose most attach pet is **dog** and people whose most attach pet is **cat** when using **WAVE1** and **WAVE2**.
+
+```{r Concern T2+T1, echo=FALSE}
+# 1-7: Strongly disagree to strongly agree
+# in T1, compare Dog and Cat effect
+dat_dog <- alldata[which(alldata$MostAttach=="Dog"),"Concern"]
+dat_dog <-  dat_dog %>%
+  as.character() %>%
+  as.numeric()
+dat_cat <- alldata[which(alldata$MostAttach=="Cat"),"Concern"]
+dat_cat <-  dat_cat %>%
+  as.character() %>%
+  as.numeric()
+wilcox.test(dat_dog, dat_cat, alternative = "two.sided")
+```
+
+##### 2.5.2 Time Effect
+H0: The distributions of **Concern** are the same for the **first** time people completed the survey and for the **second** time people completed the survey when their most attach pet is **dog**.
+
+Note: Here I used paired data (since I have two obs from the same person.)
+
+```{r Concern Dog, echo=FALSE}
+# 1-7: Strongly disagree to strongly agree
+# time effect for dog
+workIDtwice <- unique(alldata[which(alldata$num=="twice" & alldata$MostAttach=="Dog"),"workerId"])
+dat_dog_T1 <- alldata %>%
+  filter(MostAttach=="Dog") %>%
+  filter(num=="twice") %>%
+  filter(time=="T1")
+dat_dog_T1 <- select(dat_dog_T1,workerId,Concern)
+dat_dog_T2 <- alldata %>%
+  filter(MostAttach=="Dog") %>%
+  filter(num=="twice") %>%
+  filter(time=="T2")
+dat_dog_T2 <- select(dat_dog_T2,workerId,Concern)
+dat_test <- merge(dat_dog_T1,dat_dog_T2,by="workerId")
+wilcox.test(as.numeric(dat_test$Concern.x), as.numeric(dat_test$Concern.y), alternative = "two.sided",paired = TRUE)
+```
+
+H0: The distributions of **Concern** are the same for the **first** time people completed the survey and for the **second** time people completed the survey when their most attach pet is **cat**.
+
+```{r Concern Cat, echo=FALSE}
+# 1-7: Strongly disagree to strongly agree
+# time effect for dog
+workIDtwice <- unique(alldata[which(alldata$num=="twice" & alldata$MostAttach=="Cat"),"workerId"])
+dat_cat_T1 <- alldata %>%
+  filter(MostAttach=="Cat") %>%
+  filter(num=="twice") %>%
+  filter(time=="T1")
+dat_cat_T1 <- select(dat_cat_T1,workerId,Concern)
+dat_cat_T2 <- alldata %>%
+  filter(MostAttach=="Cat") %>%
+  filter(num=="twice") %>%
+  filter(time=="T2")
+dat_cat_T2 <- select(dat_cat_T2,workerId,Concern)
+dat_test <- merge(dat_cat_T1,dat_cat_T2,by="workerId")
+wilcox.test(as.numeric(dat_test$Concern.x), as.numeric(dat_test$Concern.y), alternative = "two.sided")
+```
+
+#### 2.6 CCAS1-13
+Using WAVE1 and WAVE2, significant results are showing as following:
+
+**CCAS6**
+```{r CCAS6 T2+T1, echo=FALSE}
+# 1-7: Strongly disagree to strongly agree
+dat_dog <- alldata[which(alldata$MostAttach=="Dog"),"CCAS6"]
+dat_dog <-  dat_dog %>%
+  as.character() %>%
+  as.numeric()
+
+dat_cat <- alldata[which(alldata$MostAttach=="Cat"),"CCAS6"]
+dat_cat <-  dat_cat %>%
+  as.character() %>%
+  as.numeric()
+
+wilcox.test(dat_dog, dat_cat, alternative = "two.sided")
+```
+
+**CCAS9**
+```{r CCAS9 T2+T1, echo=FALSE}
+# 1-7: Strongly disagree to strongly agree
+dat_dog <- alldata[which(alldata$MostAttach=="Dog"),"CCAS9"]
+dat_dog <-  dat_dog %>%
+  as.character() %>%
+  as.numeric()
+
+dat_cat <- alldata[which(alldata$MostAttach=="Cat"),"CCAS9"]
+dat_cat <-  dat_cat %>%
+  as.character() %>%
+  as.numeric()
+
+wilcox.test(dat_dog, dat_cat, alternative = "two.sided")
+```
+
+**CCAS11**
+
+```{r CCAS11 T2+T1, echo=FALSE}
+# 1-7: Strongly disagree to strongly agree
+dat_dog <- alldata[which(alldata$MostAttach=="Dog"),"CCAS11"]
+dat_dog <-  dat_dog %>%
+  as.character() %>%
+  as.numeric()
+
+dat_cat <- alldata[which(alldata$MostAttach=="Cat"),"CCAS11"]
+dat_cat <-  dat_cat %>%
+  as.character() %>%
+  as.numeric()
+
+wilcox.test(dat_dog, dat_cat, alternative = "two.sided")
+```
+

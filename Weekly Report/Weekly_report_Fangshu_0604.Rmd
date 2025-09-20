@@ -1,0 +1,1218 @@
+---
+title: "Weekly report"
+author: "Fangshu Ye"
+date: "6/4/2020"
+output: 
+ pdf_document:
+   number_sections: yes
+   toc: yes
+   toc_depth: 3
+header-includes:
+ \usepackage{amssymb,amsmath,latexsym,amsfonts,amsthm,float,xcolor,makecell}
+ \floatplacement{figure}{H}
+---
+
+
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = FALSE,message=FALSE,warning=FALSE,comment = NA)
+```
+
+\newpage
+\section{Pet owners versus no-pet owners}
+
+**PetOwner**(1:Yes; 0:No) : Do you currently have or share responsibility for a pet/companion animal?
+
+```{r data prep}
+rm(list = ls())
+setwd('/Users/fangshu/Desktop/research/Analysis_pets_isolation/COVIDandPETS-master/cleaned_data/')
+library(dplyr)
+library(ggplot2)
+library(lme4)
+library(knitr)
+library(kableExtra)
+library(ordinal)
+library(formattable)
+library(gridExtra)
+library(nnet)
+rawdatalist <- list()
+for (d in 1:3) {
+  rawdatalist[[d]] <- read.csv(paste0("wave",d,"_cleaned_0602.csv"))
+}
+# x: pet owner yes or no ('PetOwner')
+# y: Kessler 1 -10, Gad 1-7, Lonely 1-3, Risk 1-3, psychproblem, and genhealth
+# use ordinal logistic regression
+
+# Kessler 1 -10:Generalized Psychological Distress
+# Gad 1-7: Generalized Anxiety Disorder
+# Lonely 1-3: Loneliness Short Form
+# Risk 1-3: COVID Risk Perceptions
+# psychproblem, and genhealth
+
+workerid_three <- intersect(rawdatalist[[1]]$workerId,rawdatalist[[2]]$workerId)
+workerid_three <- intersect(workerid_three,rawdatalist[[3]]$workerId)
+alldata <- c()
+for (d in 1:3) {
+  
+  wave <- data.frame(dplyr::select(rawdatalist[[d]],workerId,PetOwner,
+                           Kessler1,Kessler2,Kessler3,Kessler4,Kessler5,
+                           Kessler6,Kessler7,Kessler8,Kessler9,Kessler10,
+                           Gad1,Gad2,Gad3,Gad4,Gad5,Gad6,Gad7,
+                           Lonely1,Lonely2,Lonely3,
+                           Risk1,Risk2,Risk3,
+                           genhealth))
+  timepoint <- paste0("T",d)
+  
+  wave$time <- rep(timepoint,nrow(wave))
+  
+  alldata <- rbind(alldata,wave)
+}
+alldata <- alldata %>%
+  mutate(num=ifelse(workerId %in% workerid_three,"three","once_or_twice")) 
+
+cols <- colnames(alldata)
+alldata[cols] <- lapply(alldata[cols], factor) 
+levels(alldata$PetOwner) <- c("No","Yes")
+```
+
+Data size:
+```{r data size alldata}
+table(alldata$time)
+```
+
+\subsection{Common Questions}
+\subsubsection{Genhealth}
+
+```{r genhealth plot,fig.height=6}
+sumdata1 <- alldata %>%
+  group_by(time,PetOwner) %>%
+  summarise(count = n())
+
+sumdata2 <- alldata %>%
+  group_by(time,PetOwner,genhealth) %>%
+  summarise(percent = n())
+
+sumdata2 <- merge(sumdata2,sumdata1,by=c("time","PetOwner"))
+sumdata2$percent <- sumdata2$percent/sumdata2$count
+levels(sumdata2$genhealth) <- c("Bad","Not so good",
+                               "So So","Good",
+                               "Excellent")
+
+ggplot(sumdata2, aes(x=PetOwner,y=percent,fill=genhealth))+geom_col(width = 0.5)+facet_grid(time~.)+
+  geom_text(aes(label = scales::percent(percent)),position = position_stack(vjust = .5))+
+  ggtitle("How would you describe your general health lately?")
+```
+
+```{r genhealth model}
+m <- clmm(genhealth ~ PetOwner + time + (1|workerId), data = alldata)
+coef_4 <- summary(m)$coefficients
+coef <- coef_4[(nrow(coef_4)-2):nrow(coef_4),]
+colnames(coef)[4] <- "pvalue"
+
+colns <- colnames(coef)
+rowns <- rownames(coef)
+coef <- coef %>%
+  round(3) %>%
+  as.data.frame() %>%
+  mutate(Model=rowns) %>%
+  select(Model,colns[-3])
+
+coef %>%
+  mutate(pvalue = cell_spec(pvalue, "latex", color = ifelse(pvalue < 0.05, "red", "black"))) %>%
+  kable("latex", escape = F, booktabs = T, linesep = "",
+        caption = "Ordinal Logistic Regression: genhealth $\\sim$ PetOwner + time + (1|workerId)")%>%
+  kable_styling(latex_options = "hold_position")
+```
+
+
+\subsubsection{Kessler 1-10}
+only show two plots here for example
+```{r Kessler3 plot,fig.height=4,fig.width=6, fig.align = "center"}
+sumdata1 <- alldata %>%
+  group_by(time,PetOwner) %>%
+  summarise(count = n())
+
+sumdata2 <- alldata %>%
+  group_by(time,PetOwner,Kessler3) %>%
+  summarise(percent = n())
+
+sumdata2 <- merge(sumdata2,sumdata1,by=c("time","PetOwner"))
+sumdata2$percent <- sumdata2$percent/sumdata2$count
+levels(sumdata2$Kessler3) <- c("None of the time","A little of the time",
+                               "Some of the time","Most of the time",
+                               "All of the time")
+
+ggplot(sumdata2, aes(x=PetOwner,y=percent,fill=Kessler3))+geom_col(width = 0.5)+facet_grid(time~.)+
+  geom_text(aes(label = scales::percent(percent)),position = position_stack(vjust = .5))+
+  ggtitle("Kessler3:How often did you feel so nervous \n that nothing could calm you down?")
+```
+
+```{r Kessler4 plot,fig.height=4,fig.width=6, fig.align = "center"}
+sumdata1 <- alldata %>%
+  group_by(time,PetOwner) %>%
+  summarise(count = n())
+
+sumdata2 <- alldata %>%
+  group_by(time,PetOwner,Kessler4) %>%
+  summarise(percent = n())
+
+sumdata2 <- merge(sumdata2,sumdata1,by=c("time","PetOwner"))
+sumdata2$percent <- sumdata2$percent/sumdata2$count
+levels(sumdata2$Kessler4) <- c("None of the time","A little of the time",
+                               "Some of the time","Most of the time",
+                               "All of the time")
+
+ggplot(sumdata2, aes(x=PetOwner,y=percent,fill=Kessler4))+geom_col(width = 0.5)+facet_grid(time~.)+
+  geom_text(aes(label = scales::percent(percent)),position = position_stack(vjust = .5))+
+  ggtitle("Kessler4: How often did you feel hopeless?")
+```
+
+
+```{r Kessler 1-10 model}
+coef <- c()
+for(q in 1:10){
+  formula <- as.formula(paste0("Kessler",q,"~","PetOwner + time + (1|workerId)"))
+  
+  if(q==1){
+    dat_q <- alldata %>%
+      filter(Kessler1!=5)
+    m <- clmm(formula, data = dat_q)
+  }else if(q==8){
+    dat_q <- alldata %>%
+      filter(Kessler8!=5)
+    m <- clmm(formula, data = dat_q)
+  }else{
+    m <- clmm(formula, data = alldata)
+  }
+  coef_q <- summary(m)$coefficients
+  coef <- rbind(coef,coef_q[(nrow(coef_q)-2):nrow(coef_q),])
+}
+colnames(coef)[4] <- "pvalue"
+
+colns <- colnames(coef)
+rowns <- rownames(coef)
+coef <- coef %>%
+  round(3) %>%
+  as.data.frame() %>%
+  mutate(Model=rowns) %>%
+  select(Model,colns[-3])
+
+coef %>%
+  mutate(pvalue = cell_spec(pvalue, "latex", color = ifelse(pvalue < 0.05, "red", "black"))) %>%
+  kable("latex", escape = F, booktabs = T, linesep = "",caption = "Ordinal Logistic Regression: Kessler $\\sim$ PetOwner + time + (1|workerId)") %>%
+  kable_styling(latex_options = "hold_position")%>%
+  pack_rows("Kessler1: how often did you feel tired for no good reason?", 1, 3) %>%
+  pack_rows("Kessler2: how often did you feel nervous?", 4, 6) %>%
+  pack_rows("Kessler3: how often did you feel so nervous that nothing could calm you down?", 7, 9) %>%
+  pack_rows("Kessler4: how often did you feel hopeless?", 10, 12) %>%
+  pack_rows("Kessler5: how often did you feel restless or fidgety?", 13, 15) %>%
+  pack_rows("Kessler6: how often did you feel so restless that you could not sit still?", 16, 18) %>%
+  pack_rows("Kessler7: how often did you feel depressed?", 19, 21) %>%
+  pack_rows("Kessler8: how often did you feel so depressed that nothing could cheer you up?", 22, 24) %>%
+  pack_rows("Kessler9: how often did you feel that everything was an effort?", 25, 27) %>%
+  pack_rows("Kessler10: how often did you feel worthless?", 28, 30)
+```
+
+\pagebreak
+\subsubsection{Grad 1-7}
+
+only show two plots here for example
+```{r Gad1 plot,fig.height=3.8,fig.width=6, fig.align = "center"}
+sumdata1 <- alldata %>%
+  group_by(time,PetOwner) %>%
+  summarise(count = n())
+
+sumdata2 <- alldata %>%
+  group_by(time,PetOwner,Gad1) %>%
+  summarise(percent = n())
+
+sumdata2 <- merge(sumdata2,sumdata1,by=c("time","PetOwner"))
+sumdata2$percent <- sumdata2$percent/sumdata2$count
+levels(sumdata2$Gad1) <- c("None of the time","A little of the time",
+                               "Some of the time","Most of the time",
+                               "All of the time")
+
+ggplot(sumdata2, aes(x=PetOwner,y=percent,fill=Gad1))+geom_col(width = 0.5)+facet_grid(time~.)+
+  geom_text(aes(label = scales::percent(percent)),position = position_stack(vjust = .5))+
+  ggtitle("Gad1:how often have you been bothered \n by feeling nervous, anxious or on edge?")
+```
+
+
+```{r Gad4 plot,fig.height=3.8,fig.width=6, fig.align = "center"}
+sumdata1 <- alldata %>%
+  group_by(time,PetOwner) %>%
+  summarise(count = n())
+
+sumdata2 <- alldata %>%
+  group_by(time,PetOwner,Gad4) %>%
+  summarise(percent = n())
+
+sumdata2 <- merge(sumdata2,sumdata1,by=c("time","PetOwner"))
+sumdata2$percent <- sumdata2$percent/sumdata2$count
+levels(sumdata2$Gad4) <- c("None of the time","A little of the time",
+                               "Some of the time","Most of the time",
+                               "All of the time")
+
+ggplot(sumdata2, aes(x=PetOwner,y=percent,fill=Gad4))+geom_col(width = 0.5)+facet_grid(time~.)+
+  geom_text(aes(label = scales::percent(percent)),position = position_stack(vjust = .5))+
+  ggtitle("Gad4:How often have you had trouble relaxing?")
+```
+
+
+```{r Gad 1-7 model}
+coef <- c()
+for(q in 1:7){
+  formula <- as.formula(paste0("Gad",q,"~","PetOwner + time + (1|workerId)"))
+  m <- clmm(formula, data = alldata)
+  coef_q <- summary(m)$coefficients
+  coef <- rbind(coef,coef_q[(nrow(coef_q)-2):nrow(coef_q),])
+}
+colnames(coef)[4] <- "pvalue"
+
+colns <- colnames(coef)
+rowns <- rownames(coef)
+coef <- coef %>%
+  round(3) %>%
+  as.data.frame() %>%
+  mutate(Model=rowns) %>%
+  select(Model,colns[-3])
+
+coef %>%
+  mutate(pvalue = cell_spec(pvalue, "latex", color = ifelse(pvalue < 0.05, "red", "black"))) %>%
+  kable("latex", escape = F, booktabs = T, linesep = "",caption = "Ordinal Logistic Regression: Grad $\\sim$ PetOwner + time + (1|workerId)") %>%
+  kable_styling(latex_options = "hold_position")%>%
+  pack_rows("Gad1: how often have you been bothered by feeling nervous, anxious or on edge?", 1, 3) %>%
+  pack_rows("Gad2: how often have you been bothered by not being able to stop or control worrying?", 4, 6) %>%
+  pack_rows("Gad3: how often have you been bothered by worrying too much about different things?", 7, 9) %>%
+  pack_rows("Gad4: how often have you had trouble relaxing?", 10, 12) %>%
+  pack_rows("Gad5: how often have you been so restless that it's hard to sit still?",13, 15) %>%
+  pack_rows("Gad6: how often have you become easily annoyed or irritable?", 16, 18) %>%
+  pack_rows("Gad7: how often have you been bothered by feeling afraid as if something awful might happen?", 19, 21) 
+```
+
+
+\newpage
+
+\subsubsection{Lonely 1-3}
+```{r Lonely1 plot}
+sumdata1 <- alldata %>%
+  group_by(time,PetOwner) %>%
+  summarise(count = n())
+
+sumdata2 <- alldata %>%
+  group_by(time,PetOwner,Lonely1) %>%
+  summarise(percent = n())
+
+sumdata2 <- merge(sumdata2,sumdata1,by=c("time","PetOwner"))
+sumdata2$percent <- sumdata2$percent/sumdata2$count
+levels(sumdata2$Lonely1) <- c("None of the time","A little of the time",
+                               "Some of the time","Most of the time",
+                               "All of the time")
+
+ggplot(sumdata2, aes(x=PetOwner,y=percent,fill=Lonely1))+geom_col(width = 0.5)+facet_grid(time~.)+
+  geom_text(aes(label = scales::percent(percent)),position = position_stack(vjust = .5))+
+  ggtitle("Lonely1: How often did you feel you lack companionship?")
+```
+
+```{r Lonely 1-3 model}
+coef <- c()
+for(q in 1:3){
+  formula <- as.formula(paste0("Lonely",q,"~","PetOwner + time + (1|workerId)"))
+  m <- clmm(formula, data = alldata)
+  coef_q <- summary(m)$coefficients
+  coef <- rbind(coef,coef_q[(nrow(coef_q)-2):nrow(coef_q),])
+}
+colnames(coef)[4] <- "pvalue"
+
+colns <- colnames(coef)
+rowns <- rownames(coef)
+coef <- coef %>%
+  round(3) %>%
+  as.data.frame() %>%
+  mutate(Model=rowns) %>%
+  select(Model,colns[-3])
+
+coef %>%
+  mutate(pvalue = cell_spec(pvalue, "latex", color = ifelse(pvalue < 0.05, "red", "black"))) %>%
+  kable("latex", escape = F, booktabs = T, linesep = "",caption = "Ordinal Logistic Regression: Lonely $\\sim$ PetOwner + time + (1|workerId)") %>%
+  kable_styling(latex_options = "hold_position")%>%
+  pack_rows("Lonely1: how often did you feel you lack companionship?", 1, 3) %>%
+  pack_rows("Lonely2: how often did you feel left out?", 4, 6) %>%
+  pack_rows("Lonely3: how often did you feel isolated from others?", 7, 9)
+```
+
+\pagebreak
+
+
+\subsubsection{Risk 1-3}
+```{r Risk2 plot}
+sumdata1 <- alldata %>%
+  group_by(time,PetOwner) %>%
+  summarise(count = n())
+
+sumdata2 <- alldata %>%
+  group_by(time,PetOwner,Risk2) %>%
+  summarise(percent = n())
+
+sumdata2 <- merge(sumdata2,sumdata1,by=c("time","PetOwner"))
+sumdata2$percent <- sumdata2$percent/sumdata2$count
+levels(sumdata2$Risk2) <- c("Not at all serious","Slightly serious",
+                               "Moderately serious","Very serious",
+                               "Extremely serious")
+
+ggplot(sumdata2, aes(x=PetOwner,y=percent,fill=Risk2))+geom_col(width = 0.5)+facet_grid(time~.)+
+  geom_text(aes(label = scales::percent(percent)),position = position_stack(vjust = .5))+
+  ggtitle("Risk2:How serious do you think COVID-19 would be if you contracted it?")
+```
+
+```{r Risk 1-3 model}
+coef <- c()
+for(q in 1:3){
+  formula <- as.formula(paste0("Risk",q,"~","PetOwner + time + (1|workerId)"))
+  m <- clmm(formula, data = alldata)
+  coef_q <- summary(m)$coefficients
+  coef <- rbind(coef,coef_q[(nrow(coef_q)-2):nrow(coef_q),])
+}
+colnames(coef)[4] <- "pvalue"
+
+colns <- colnames(coef)
+rowns <- rownames(coef)
+coef <- coef %>%
+  round(3) %>%
+  as.data.frame() %>%
+  mutate(Model=rowns) %>%
+  select(Model,colns[-3])
+
+coef %>%
+  mutate(pvalue = cell_spec(pvalue, "latex", color = ifelse(pvalue < 0.05, "red", "black"))) %>%
+  kable("latex", escape = F, booktabs = T, linesep = "",caption = "Ordinal Logistic Regression: Risk $\\sim$ PetOwner + time + (1|workerId)") %>%
+  kable_styling(latex_options = "hold_position")%>%
+  pack_rows("Risk1:In your opinion, how likely is it that you will contract COVID-19?", 1, 3) %>%
+  pack_rows("Risk2:How serious do you think COVID-19 would be if you contracted it?", 4, 6) %>%
+  pack_rows("Risk3:How concerned are you about the COVID-19?", 7, 9)
+```
+
+\newpage
+
+\subsection{Unique Questions for Wave3}
+
+```{r}
+wave3 <- data.frame(dplyr::select(rawdatalist[[3]],workerId,PetOwner,
+                           Aware,InfoSource,TrustInfo,
+                           SusceptAnimal_1,SusceptAnimal_2,SusceptAnimal_3,SusceptAnimal_4,
+                           SusceptAnimal_5,SusceptAnimal_6,SusceptAnimal_7,
+                           Q92_1,Q92_2,Q92_3,Q92_4,Q92_5,Q92_6,Q92_7,Q92_8,Q92_9,
+                           InfectHumans_1,InfectHumans_2,InfectHumans_3,InfectHumans_4,InfectHumans_5,
+                           HumansInfectAnimal_1,HumansInfectAnimal_2,HumansInfectAnimal_3,
+                           HumansInfectAnimal_4,HumansInfectAnimal_5))
+cols <- colnames(wave3)
+wave3[cols] <- lapply(wave3[cols], factor) 
+levels(wave3$PetOwner) <- c("No","Yes")
+```
+
+Data Size
+```{r data size wave3}
+table(wave3$PetOwner)
+```
+
+\subsubsection{Aware}
+```{r Aware plot, echo=FALSE}
+sumdata1 <- wave3 %>%
+  group_by(PetOwner) %>%
+  summarise(count = n())
+
+sumdata2 <- wave3 %>%
+  group_by(PetOwner,Aware) %>%
+  summarise(percent = n())
+
+sumdata2 <- merge(sumdata2,sumdata1,by=c("PetOwner"))
+sumdata2$percent <- sumdata2$percent/sumdata2$count
+levels(sumdata2$Aware) <- c("Nothing at all","A little",
+                               "A moderate amount","A lot",
+                               "A great deal")
+
+ggplot(sumdata2, aes(x=PetOwner,y=percent,fill=Aware))+geom_col(width = 0.5)+
+  geom_text(aes(label = scales::percent(percent)),position = position_stack(vjust = .5))+
+  ggtitle("How much have you read or heard about \n on the topic of COVID-19 and animals?")
+```
+
+```{r Aware model}
+m <- clm(Aware ~ PetOwner, data = wave3)
+coef <- summary(m)$coefficients
+round(tail(coef,1),3)
+```
+
+\subsubsection{InfoSource}
+
+```{r InfoSource plot,fig.height=7}
+sumdata1 <- wave3 %>%
+  group_by(PetOwner) %>%
+  summarise(count = n())
+
+sumdata2 <- wave3 %>%
+  group_by(PetOwner,InfoSource) %>%
+  summarise(percent = n())
+
+sumdata2 <- merge(sumdata2,sumdata1,by=c("PetOwner"))
+sumdata2$percent <- sumdata2$percent/sumdata2$count
+levels(sumdata2$InfoSource) <- c("Media/new feeds","Social media / Instagram / Facebook groups / twitter",
+                               "Government and regulatory agencies","My veterinarian",
+                               "Animal shelter/animal protection organization","Friends / family",
+                               "Other","I do NOT have a source of information")
+
+ggplot(sumdata2, aes(x=PetOwner,y=percent,fill=InfoSource))+geom_col(width = 0.5)+
+  geom_text(aes(label = scales::percent(percent)),position = position_stack(vjust = .5))+
+  ggtitle("Which of the following options best describes \n where you are obtaining information about COVID-19 and animals?")
+```
+
+```{r InfoSource model}
+m <- multinom(InfoSource ~ PetOwner, data = wave3, trace=FALSE)
+coef_4 <- summary(m)$coefficients
+round(coef_4,3)
+```
+
+\subsubsection{TrustInfo}
+```{r TrustInfo plot}
+wave3_info <- wave3 %>%
+  filter(InfoSource!=8)
+sumdata1 <- wave3_info %>%
+  group_by(PetOwner) %>%
+  summarise(count = n())
+
+sumdata2 <- wave3_info %>%
+  group_by(PetOwner,TrustInfo) %>%
+  summarise(percent = n())
+
+sumdata2 <- merge(sumdata2,sumdata1,by=c("PetOwner"))
+sumdata2$percent <- sumdata2$percent/sumdata2$count
+levels(sumdata2$TrustInfo) <- c("Not at all trustworthy","Slightly trustworthy",
+                               "Moderately trustworthy","Very trustworthy",
+                               "Extremely trustworthy")
+
+ggplot(sumdata2, aes(x=PetOwner,y=percent,fill=TrustInfo))+geom_col(width = 0.5)+
+  geom_text(aes(label = scales::percent(percent)),position = position_stack(vjust = .5))+
+  ggtitle("How trustworthy do you consider this information source to be?")
+```
+
+```{r TrustInfo model}
+m <- clm(TrustInfo ~ PetOwner, data = wave3_info)
+coef <- summary(m)$coefficients
+round(tail(coef,1),3)
+```
+
+\newpage
+
+\subsubsection{SusceptAnimal 1-7 and Q92 1-9}
+- SusceptAnimal_1-7: The question realted to these 7 variables is: Based on your current knowledge, rate the extent to which you think each of the following animals can "catch" COVID-19. There are 7 animals listed in this question.
+- Q92_1-9: The question realted to these 9 variables is the same as the above. There are 9 animals listed in this question.
+
+Therefore, they are the same questions but different animals listed.
+
+```{r Q92_3 plot}
+sumdata1 <- wave3 %>%
+  group_by(PetOwner) %>%
+  summarise(count = n())
+
+sumdata2 <- wave3 %>%
+  group_by(PetOwner,Q92_3) %>%
+  summarise(percent = n())
+
+sumdata2 <- merge(sumdata2,sumdata1,by=c("PetOwner"))
+sumdata2$percent <- sumdata2$percent/sumdata2$count
+levels(sumdata2$Q92_3) <- c("Definitely cannot catch COVID-19","Probably cannot catch COVID-19",
+                               "Might or might not catch COVID-19","Probably can catch COVID-19",
+                               "Definitely can catch COVID-19")
+
+ggplot(sumdata2, aes(x=PetOwner,y=percent,fill=Q92_3))+geom_col(width = 0.5)+
+  geom_text(aes(label = scales::percent(percent)),position = position_stack(vjust = .5))+
+  ggtitle("Based on your current knowledge, \n rate the extent to which you think Ferrets can catch COVID-19.")
+```
+
+```{r SusceptAnimal_1-7+Q92_1-9 cols}
+catch1 <- paste0("SusceptAnimal_",c(1:7))
+catch2 <- paste0("Q92_",c(1:9))
+cols <- c(catch1,catch2)
+animals <- c("Tigers","Chimpanzees","Gorillas","Deer","Lions","Birds","Bats",
+             "Dogs","Cats","Ferrets","Rabbits","Hamsters","Horses","Pigs","Cattle","Chickens")
+```
+
+```{r susceptAnimal_1-7+Q92_1-9 model}
+m1 <- clm(SusceptAnimal_1~PetOwner, data = wave3)
+m2 <- clm(SusceptAnimal_2~PetOwner, data = wave3)
+m3 <- clm(SusceptAnimal_3~PetOwner, data = wave3)
+m4 <- clm(SusceptAnimal_4~PetOwner, data = wave3)
+m5 <- clm(SusceptAnimal_5~PetOwner, data = wave3)
+m6 <- clm(SusceptAnimal_6~PetOwner, data = wave3)
+m7 <- clm(SusceptAnimal_7~PetOwner, data = wave3)
+
+m8 <- clm(Q92_1~PetOwner, data = wave3)
+m9 <- clm(Q92_2~PetOwner, data = wave3)
+m10 <- clm(Q92_3~PetOwner, data = wave3)
+m11 <- clm(Q92_4~PetOwner, data = wave3)
+m12 <- clm(Q92_5~PetOwner, data = wave3)
+m13 <- clm(Q92_6~PetOwner, data = wave3)
+m14 <- clm(Q92_7~PetOwner, data = wave3)
+m15 <- clm(Q92_8~PetOwner, data = wave3)
+m16 <- clm(Q92_9~PetOwner, data = wave3)
+coef <- rbind(tail(summary(m1)$coefficients,1),
+              tail(summary(m2)$coefficients,1),
+              tail(summary(m3)$coefficients,1),
+              tail(summary(m4)$coefficients,1),
+              tail(summary(m5)$coefficients,1),
+              tail(summary(m6)$coefficients,1),
+              tail(summary(m7)$coefficients,1),
+              tail(summary(m8)$coefficients,1),
+              tail(summary(m9)$coefficients,1),
+              tail(summary(m10)$coefficients,1),
+              tail(summary(m11)$coefficients,1),
+              tail(summary(m12)$coefficients,1),
+              tail(summary(m13)$coefficients,1),
+              tail(summary(m14)$coefficients,1),
+              tail(summary(m15)$coefficients,1),
+              tail(summary(m16)$coefficients,1))
+
+rownames(coef) <- animals
+
+colnames(coef)[4] <- "pvalue"
+
+colns <- colnames(coef)
+rowns <- rownames(coef)
+coef <- coef %>%
+  round(3) %>%
+  as.data.frame() %>%
+  mutate(Animal=rowns) %>%
+  select(Animal,colns[-3])
+
+coef %>%
+  mutate(pvalue = cell_spec(pvalue, "latex", color = ifelse(pvalue < 0.05, "red", "black"))) %>%
+  kable("latex", escape = F, booktabs = T, linesep = "",
+        caption = "The coef of PetOwnerYes in Ordinal Logistic Regression: SusceptAnimal $\\sim$ PetOwner for different animals")%>%
+  kable_styling(latex_options = "hold_position")
+```
+
+\newpage
+
+\subsubsection{InfectHumans 1-5}
+
+
+```{r InfectHumans_1-5 model}
+animals <- c("Cats",
+             "Dogs",
+             "Pigs",
+             "Chickens",
+             "Tigers")
+ 
+m1 <- clm(InfectHumans_1~PetOwner, data = wave3)
+m2 <- clm(InfectHumans_2~PetOwner, data = wave3)
+m3 <- clm(InfectHumans_3~PetOwner, data = wave3)
+m4 <- clm(InfectHumans_4~PetOwner, data = wave3)
+m5 <- clm(InfectHumans_5~PetOwner, data = wave3)
+
+coef <- rbind(tail(summary(m1)$coefficients,1),
+              tail(summary(m2)$coefficients,1),
+              tail(summary(m3)$coefficients,1),
+              tail(summary(m4)$coefficients,1),
+              tail(summary(m5)$coefficients,1))
+
+rownames(coef) <- animals
+colnames(coef)[4] <- "pvalue"
+
+colns <- colnames(coef)
+rowns <- rownames(coef)
+coef <- coef %>%
+  round(3) %>%
+  as.data.frame() %>%
+  mutate(Model=rowns) %>%
+  select(Model,colns[-3])
+
+coef %>%
+  mutate(pvalue = cell_spec(pvalue, "latex", color = ifelse(pvalue < 0.05, "red", "black"))) %>%
+  kable("latex", escape = F, booktabs = T, linesep = "",
+        caption = "The coef of PetOwnerYes in Ordinal Logistic Regression: InfectHumans $\\sim$ PetOwner for different animals")%>%
+  kable_styling(latex_options = "hold_position")
+```
+
+\subsubsection{HumansInfectAnimal 1-5}
+
+```{r HumansInfectAnimal_1-5 model}
+animals <- c("Cats",
+             "Dogs",
+             "Pigs",
+             "Chickens",
+             "Tigers")
+ 
+m1 <- clm(HumansInfectAnimal_1~PetOwner, data = wave3)
+m2 <- clm(HumansInfectAnimal_2~PetOwner, data = wave3)
+m3 <- clm(HumansInfectAnimal_3~PetOwner, data = wave3)
+m4 <- clm(HumansInfectAnimal_4~PetOwner, data = wave3)
+m5 <- clm(HumansInfectAnimal_5~PetOwner, data = wave3)
+
+coef <- rbind(tail(summary(m1)$coefficients,1),
+              tail(summary(m2)$coefficients,1),
+              tail(summary(m3)$coefficients,1),
+              tail(summary(m4)$coefficients,1),
+              tail(summary(m5)$coefficients,1))
+
+rownames(coef) <- animals
+colnames(coef)[4] <- "pvalue"
+
+colns <- colnames(coef)
+rowns <- rownames(coef)
+coef <- coef %>%
+  round(3) %>%
+  as.data.frame() %>%
+  mutate(Model=rowns) %>%
+  select(Model,colns[-3])
+
+coef %>%
+  mutate(pvalue = cell_spec(pvalue, "latex", color = ifelse(pvalue < 0.05, "red", "black"))) %>%
+  kable("latex", escape = F, booktabs = T, linesep = "",
+        caption = "The coef of PetOwnerYes in Ordinal Logistic Regression: HumansInfectAnimal $\\sim$ PetOwner for different animals")%>%
+  kable_styling(latex_options = "hold_position")
+```
+
+\pagebreak
+\section{Cat owners versus dogs owners}
+```{r input data}
+rm(list = ls())
+setwd('/Users/fangshu/Desktop/research/Analysis_pets_isolation/COVIDandPETS-master/cleaned_data/')
+library(dplyr)
+library(ggplot2)
+library(lme4)
+library(knitr)
+library(kableExtra)
+library(ordinal)
+library(formattable)
+rawdatalist <- list()
+for (d in 1:3) {
+  rawdatalist[[d]] <- read.csv(paste0("wave",d,"_cleaned_0602.csv"))
+}
+
+workerid_three <- intersect(rawdatalist[[1]]$workerId,rawdatalist[[2]]$workerId)
+workerid_three <- intersect(workerid_three,rawdatalist[[3]]$workerId)
+alldata <- c()
+for (d in 1:3) {
+  rawdatalist[[d]] <- rawdatalist[[d]] %>%
+    filter(PetOwner==1) %>%
+    filter(MostAttach %in% c(1,2))
+  
+  wave <- data.frame(select(rawdatalist[[d]],workerId,MostAttach,
+                           Compliance,Interact,
+                           Concern,
+                           CCAS1,CCAS2,CCAS3,CCAS4,CCAS5,CCAS6,CCAS7,
+                           CCAS8,CCAS9,CCAS10,CCAS11,CCAS12,CCAS13))
+  timepoint <- paste0("T",d)
+  
+  wave$time <- rep(timepoint,nrow(wave))
+  
+  alldata <- rbind(alldata,wave)
+}
+alldata <- alldata %>%
+  mutate(num=ifelse(workerId %in% workerid_three,"three","once_or_twice")) 
+
+cols <- colnames(alldata)
+alldata[cols] <- lapply(alldata[cols], factor) 
+levels(alldata$MostAttach) <- c("Dog","Cat")
+```
+
+\subsection{Common Questions}
+\subsubsection{Compliance}
+```{r Compliance plot}
+sumdata1 <- alldata %>%
+  group_by(time,MostAttach) %>%
+  summarise(count = n())
+
+sumdata2 <- alldata %>%
+  group_by(time,MostAttach,Compliance) %>%
+  summarise(percent = n())
+
+sumdata2 <- merge(sumdata2,sumdata1,by=c("time","MostAttach"))
+sumdata2$percent <- sumdata2$percent/sumdata2$count
+
+ggplot(sumdata2, aes(x=MostAttach,y=percent,fill=Compliance))+geom_col(width = 0.5)+facet_grid(time~.)+
+  geom_text(aes(label = scales::percent(percent)),position = position_stack(vjust = .5))
+```
+
+```{r Compliance model, echo=FALSE}
+m1 <- glm(Compliance ~ MostAttach, data = alldata[alldata$time=="T1",], family = "binomial")
+m2 <- glm(Compliance ~ MostAttach, data = alldata[alldata$time=="T2",], family = "binomial")
+m3 <- glm(Compliance ~ MostAttach, data = alldata[alldata$time=="T3",], family = "binomial")
+m4 <- glmer(Compliance ~ MostAttach + time + (1|workerId), data = alldata, family = "binomial")
+
+coef <- rbind(summary(m1)$coef[-1,],summary(m2)$coef[-1,],summary(m3)$coef[-1,],summary(m4)$coef[-1,])
+row.names(coef)[1:3] <- rep("MostAttachCat",3)
+
+colnames(coef)[4] <- "pvalue"
+
+colns <- colnames(coef)
+rowns <- rownames(coef)
+coef <- coef %>%
+  round(3) %>%
+  as.data.frame() %>%
+  mutate(Model=rowns) %>%
+  select(Model,colns[-3])
+
+coef %>%
+  mutate(pvalue = cell_spec(pvalue, "latex", color = ifelse(pvalue < 0.05, "red", "black"))) %>%
+  kable("latex", escape = F, booktabs = T, linesep = "") %>%
+  kable_styling(latex_options = "hold_position")%>%
+  pack_rows("T1: Compliance ~ MostAttach", 1, 1) %>%
+  pack_rows("T2: Compliance ~ MostAttach", 2, 2) %>%
+  pack_rows("T3: Compliance ~ MostAttach", 3, 3) %>%
+  pack_rows("T1+T2+T3: Compliance ~ MostAttach + time + (1|workerId)", 4, 6)
+```
+\pagebreak
+\subsubsection{Interact}
+```{r Interact plot}
+sumdata1 <- alldata %>%
+  group_by(time,MostAttach) %>%
+  summarise(count = n())
+
+sumdata2 <- alldata %>%
+  group_by(time,MostAttach,Interact) %>%
+  summarise(percent = n())
+
+sumdata2 <- merge(sumdata2,sumdata1,by=c("time","MostAttach"))
+sumdata2$percent <- sumdata2$percent/sumdata2$count
+
+ggplot(sumdata2, aes(x=MostAttach,y=percent,fill=Interact))+geom_col(width = 0.5)+facet_grid(time~.)+
+  geom_text(aes(label = scales::percent(percent)),position = position_stack(vjust = .5))
+```
+
+```{r Interact model, echo=FALSE}
+m3 <- glmer(Interact ~ MostAttach + time + (1|workerId), data = alldata, family = "binomial")
+coef <- summary(m3)$coef[-1,]
+
+colnames(coef)[4] <- "pvalue"
+
+colns <- colnames(coef)
+rowns <- rownames(coef)
+coef <- coef %>%
+  round(3) %>%
+  as.data.frame() %>%
+  mutate(Model=rowns) %>%
+  select(Model,colns[-3])
+
+coef %>%
+  mutate(pvalue = cell_spec(pvalue, "latex", color = ifelse(pvalue < 0.05, "red", "black"))) %>%
+  kable("latex", escape = F, booktabs = T, linesep = "",
+        caption = "Interact $\\sim$ MostAttach + time + (1|workerId)")%>%
+  kable_styling(latex_options = "hold_position")
+```
+
+\pagebreak
+\subsubsection{Concern}
+
+```{r Concern plot,fig.height=6.3}
+sumdata1 <- alldata %>%
+  group_by(time,MostAttach) %>%
+  summarise(count = n())
+
+sumdata2 <- alldata %>%
+  group_by(time,MostAttach,Concern) %>%
+  summarise(percent = n())
+
+sumdata2 <- merge(sumdata2,sumdata1,by=c("time","MostAttach"))
+sumdata2$percent <- sumdata2$percent/sumdata2$count
+
+levels(sumdata2$Concern) <- c("Not at all concerned","A little concerned ",
+                               "Moderately concerened","Very concerned",
+                               "Extremely concerned")
+
+ggplot(sumdata2, aes(x=MostAttach,y=percent,fill=Concern))+geom_col(width = 0.5)+facet_grid(time~.)+
+  geom_text(aes(label = scales::percent(percent)),position = position_stack(vjust = .5))+
+  ggtitle("How concerned are you about your ability \n to care for your pets/companion animal(s)?")
+```
+
+```{r Concern model, echo=FALSE}
+m3 <- clmm(Concern ~ MostAttach + time + (1|workerId), data = alldata,)
+coef <- tail(summary(m3)$coef,3) 
+
+colnames(coef)[4] <- "pvalue"
+
+colns <- colnames(coef)
+rowns <- rownames(coef)
+coef <- coef %>%
+  round(3) %>%
+  as.data.frame() %>%
+  mutate(Model=rowns) %>%
+  select(Model,colns[-3])
+
+coef %>%
+  mutate(pvalue = cell_spec(pvalue, "latex", color = ifelse(pvalue < 0.05, "red", "black"))) %>%
+  kable("latex", escape = F, booktabs = T, linesep = "",
+        caption = "Concern $\\sim$ MostAttach + time + (1|workerId)")%>%
+  kable_styling(latex_options = "hold_position")
+```
+
+\pagebreak
+\subsubsection{CCAS 1-13}
+
+```{r CCAS2,fig.height=7,fig.width=6.1, fig.align = "center"}
+sumdata1 <- alldata %>%
+  group_by(time,MostAttach) %>%
+  summarise(count = n())
+
+sumdata2 <- alldata %>%
+  group_by(time,MostAttach,CCAS2) %>%
+  summarise(percent = n())
+
+sumdata2 <- merge(sumdata2,sumdata1,by=c("time","MostAttach"))
+sumdata2$percent <- sumdata2$percent/sumdata2$count
+
+# no 1
+levels(sumdata2$CCAS2) <- c("Disagree",
+                               "Somewhat disagree","Neither agree nor disagree",
+                               "Somewhat agree","Agree","Strongly agree")
+
+ggplot(sumdata2, aes(x=MostAttach,y=percent,fill=CCAS2))+geom_col(width = 0.5)+facet_grid(time~.)+
+  geom_text(aes(label = scales::percent(percent)),position = position_stack(vjust = .5))+
+  ggtitle("CCAS2: Having a pet/animal gives me something to care for")
+```
+\pagebreak
+
+```{r CCAS1-13 model}
+coef <- c()
+for(q in 1:13){
+  formula <- as.formula(paste0("CCAS",q,"~","MostAttach + time + (1|workerId)"))
+  m <- clmm(formula, data = alldata)
+  coef_q <- summary(m)$coefficients
+  coef <- rbind(coef,coef_q[(nrow(coef_q)-2):nrow(coef_q),])
+}
+colnames(coef)[4] <- "pvalue"
+
+colns <- colnames(coef)
+rowns <- rownames(coef)
+coef <- coef %>%
+  round(3) %>%
+  as.data.frame() %>%
+  mutate(Model=rowns) %>%
+  select(Model,colns[-3])
+
+coef %>%
+  mutate(pvalue = cell_spec(pvalue, "latex", color = ifelse(pvalue < 0.05, "red", "black"))) %>%
+  kable("latex", escape = F, booktabs = T, linesep = "",
+        caption = "CCAS $\\sim$ MostAttach + time + (1|workerId)")%>%
+  kable_styling(latex_options = "HOLD_position") %>%
+  pack_rows("CCAS1", 1, 3) %>%
+  pack_rows("CCAS2", 4, 6) %>%
+  pack_rows("CCAS3", 7, 9) %>%
+  pack_rows("CCAS4", 10, 12) %>%
+  pack_rows("CCAS5", 13, 15) %>%
+  pack_rows("CCAS6", 16, 18) %>%
+  pack_rows("CCAS7", 19, 21) %>%
+  pack_rows("CCAS8", 22, 24) %>%
+  pack_rows("CCAS9", 25, 27) %>%
+  pack_rows("CCAS10", 28, 30) %>%
+  pack_rows("CCAS11", 31, 33) %>%
+  pack_rows("CCAS12", 34, 36) %>%
+  pack_rows("CCAS13", 37, 39)
+```
+
+\pagebreak
+\subsection{Unique Questions for Wave2}
+```{r}
+wave2 <- data.frame(select(rawdatalist[[2]],workerId,MostAttach,
+                           NonVetService,NonVetLessFreq,
+                           VetVisit,VetVisitFreq,
+                           PetHealth,))
+cols <- colnames(wave2)
+wave2[cols] <- lapply(wave2[cols], factor) 
+levels(wave2$MostAttach) <- c("Dog","Cat")
+```
+
+\subsubsection{NonVetService and NonVetLessFreq}
+```{r NonVetService plot,fig.height=3.5,fig.width=5.5, fig.align = "center"}
+sumdata1 <- wave2 %>%
+  group_by(MostAttach) %>%
+  summarise(count = n())
+
+sumdata2 <- wave2 %>%
+  group_by(MostAttach,NonVetService) %>%
+  summarise(percent = n())
+
+sumdata2 <- merge(sumdata2,sumdata1,by=c("MostAttach"))
+sumdata2$percent <- sumdata2$percent/sumdata2$count
+
+ggplot(sumdata2, aes(x=MostAttach,y=percent,fill=NonVetService))+geom_col(width = 0.5)+
+  geom_text(aes(label = scales::percent(percent)),position = position_stack(vjust = .5))+
+  ggtitle("In the past 12 months have you used an animal care service \n that does NOT normally require a veterinarian?")
+```
+
+
+```{r NonVetLessFreq plot,fig.height=3.5,fig.width=5.5, fig.align = "center"}
+sumdata1 <- wave2 %>%
+  filter(NonVetService==1) %>%
+  group_by(MostAttach) %>%
+  summarise(count = n())
+
+sumdata2 <- wave2 %>%
+  filter(NonVetService==1) %>%
+  group_by(MostAttach,NonVetLessFreq) %>%
+  summarise(percent = n())
+
+sumdata2 <- merge(sumdata2,sumdata1,by=c("MostAttach"))
+sumdata2$percent <- sumdata2$percent/sumdata2$count
+
+ggplot(sumdata2, aes(x=MostAttach,y=percent,fill=NonVetLessFreq))+geom_col(width = 0.5)+
+  geom_text(aes(label = scales::percent(percent)),position = position_stack(vjust = .5))+
+  ggtitle("Since the COVID-19 outbreak began, \n have you used any of these non-veterinary services \n less frequently than before the outbreak began?")
+```
+
+```{r NonVetService model+NonVetLessFreq model}
+m1 <- glm(NonVetService ~ MostAttach, data = wave2, family = "binomial")
+wave2_nonfreq <- wave2 %>%
+  filter(NonVetService==1)
+m2 <- glm(NonVetLessFreq ~ MostAttach, data = wave2_nonfreq, family = "binomial")
+coef <- rbind(summary(m1)$coef[2,],summary(m2)$coef[2,])
+rownames(coef) <- rep("MostAttachCat",2)
+colnames(coef)[4] <- "pvalue"
+
+colns <- colnames(coef)
+rowns <- rownames(coef)
+coef <- coef %>%
+  round(3) %>%
+  as.data.frame() %>%
+  mutate(Model=rowns) %>%
+  select(Model,colns[-3])
+
+coef %>%
+  mutate(pvalue = cell_spec(pvalue, "latex", color = ifelse(pvalue < 0.05, "red", "black"))) %>%
+  kable("latex", escape = F, booktabs = T, linesep = "")%>%
+  kable_styling(latex_options = "hold_position")%>%
+  pack_rows("NonVetService ~ MostAttach", 1, 1) %>%
+  pack_rows("NonVetLessFreq ~ MostAttach", 2, 2)
+```
+
+
+
+\pagebreak
+\subsubsection{VetVisit and VetVisitFreq}
+```{r VetVisit plot, fig.height=3.5,fig.width=5.5, fig.align = "center"}
+sumdata1 <- wave2 %>%
+  group_by(MostAttach) %>%
+  summarise(count = n())
+
+sumdata2 <- wave2 %>%
+  group_by(MostAttach,VetVisit) %>%
+  summarise(percent = n())
+
+sumdata2 <- merge(sumdata2,sumdata1,by=c("MostAttach"))
+sumdata2$percent <- sumdata2$percent/sumdata2$count
+
+ggplot(sumdata2, aes(x=MostAttach,y=percent,fill=VetVisit))+geom_col(width = 0.5)+
+  geom_text(aes(label = scales::percent(percent)),position = position_stack(vjust = .5))+
+  ggtitle("In the past 12 months, have you visited \n a veterinarian for preventative care for your pet? ")
+```
+
+
+```{r VetLessFreq plot,fig.height=3.5,fig.width=5.5, fig.align = "center"}
+sumdata1 <- wave2 %>%
+  filter(VetVisit==1) %>%
+  group_by(MostAttach) %>%
+  summarise(count = n())
+
+sumdata2 <- wave2 %>%
+  filter(VetVisit==1) %>%
+  group_by(MostAttach,VetVisitFreq) %>%
+  summarise(percent = n())
+
+sumdata2 <- merge(sumdata2,sumdata1,by=c("MostAttach"))
+sumdata2$percent <- sumdata2$percent/sumdata2$count
+
+ggplot(sumdata2, aes(x=MostAttach,y=percent,fill=VetVisitFreq))+geom_col(width = 0.5)+
+  geom_text(aes(label = scales::percent(percent)),position = position_stack(vjust = .5))+
+  ggtitle("Since the COVID-19 outbreak began, \n have you used these preventative veterinary services \n less frequently than before the outbreak began?")
+```
+
+
+```{r VetVisit model and VetLessFreq model}
+m1 <- glm(VetVisit ~ MostAttach, data = wave2, family = "binomial")
+wave2_nonfreq <- wave2 %>%
+  filter(VetVisit==1)
+m2 <- glm(VetVisitFreq ~ MostAttach, data = wave2_nonfreq, family = "binomial")
+coef <- rbind(summary(m1)$coef[2,],summary(m2)$coef[2,])
+rownames(coef) <- rep("MostAttachCat",2)
+colnames(coef)[4] <- "pvalue"
+
+colns <- colnames(coef)
+rowns <- rownames(coef)
+coef <- coef %>%
+  round(3) %>%
+  as.data.frame() %>%
+  mutate(Model=rowns) %>%
+  select(Model,colns[-3])
+
+coef %>%
+  mutate(pvalue = cell_spec(pvalue, "latex", color = ifelse(pvalue < 0.05, "red", "black"))) %>%
+  kable("latex", escape = F, booktabs = T, linesep = "")%>%
+  kable_styling(latex_options = "hold_position")%>%
+  pack_rows("VetVisit ~ MostAttach", 1, 1) %>%
+  pack_rows("VetVisitFreq ~ MostAttach", 2, 2)
+
+```
+
+\pagebreak
+\subsubsection{PetHealth}
+```{r PetHealth plot}
+sumdata1 <- wave2 %>%
+  group_by(MostAttach) %>%
+  summarise(count = n())
+
+sumdata2 <- wave2 %>%
+  group_by(MostAttach,PetHealth) %>%
+  summarise(percent = n())
+
+sumdata2 <- merge(sumdata2,sumdata1,by=c("MostAttach"))
+sumdata2$percent <- sumdata2$percent/sumdata2$count
+
+ggplot(sumdata2, aes(x=MostAttach,y=percent,fill=PetHealth))+geom_col(width = 0.5)+
+  geom_text(aes(label = scales::percent(percent)),position = position_stack(vjust = .5))+
+  ggtitle("Thinking about the time since the COVID-19 outbreak began, \n has your pet had any health issues that required a veterinarian?")
+```
+
+```{r PetHealth model}
+m <- glm(PetHealth ~ MostAttach, data = wave2, family = "binomial")
+summary(m)$coef
+```
+
+\pagebreak
+\subsection{Unique Questions for Wave3}
+```{r wave3}
+wave3 <- data.frame(select(rawdatalist[[3]],workerId,MostAttach,
+                           AvailNonVetServ,UseNonVetServ,WhichNonVetServ,
+                           AvailVetServ,UsedVetServ,WhichVetServ))
+cols <- colnames(wave3)
+wave3[cols] <- lapply(wave3[cols], factor) 
+levels(wave3$MostAttach) <- c("Dog","Cat")
+```
+
+\subsubsection{AvailNonVetServ and UseNonVetServ}
+```{r AvailNonVetServ plot,fig.height=3.5,fig.width=5.5, fig.align = "center"}
+sumdata1 <- wave3 %>%
+  group_by(MostAttach) %>%
+  summarise(count = n())
+
+sumdata2 <- wave3 %>%
+  group_by(MostAttach,AvailNonVetServ) %>%
+  summarise(percent = n())
+
+sumdata2 <- merge(sumdata2,sumdata1,by=c("MostAttach"))
+sumdata2$percent <- sumdata2$percent/sumdata2$count
+levels(sumdata2$AvailNonVetServ) <- c("Much less available","Somewhat less available",
+                               "About the same","Somewhat more available",
+                               "Much more available")
+
+ggplot(sumdata2, aes(x=MostAttach,y=percent,fill=AvailNonVetServ))+geom_col(width = 0.5)+
+  geom_text(aes(label = scales::percent(percent)),position = position_stack(vjust = .5))+
+  ggtitle("Compared to two weeks ago, would you say \n non-veterinary services are more or less available today?")
+```
+
+```{r UseNonVetServ plot,fig.height=3.5,fig.width=5.5, fig.align = "center"}
+sumdata1 <- wave3 %>%
+  group_by(MostAttach) %>%
+  summarise(count = n())
+
+sumdata2 <- wave3 %>%
+  group_by(MostAttach,UseNonVetServ) %>%
+  summarise(percent = n())
+
+sumdata2 <- merge(sumdata2,sumdata1,by=c("MostAttach"))
+sumdata2$percent <- sumdata2$percent/sumdata2$count
+levels(sumdata2$UseNonVetServ) <- c("No","Yes")
+
+ggplot(sumdata2, aes(x=MostAttach,y=percent,fill=UseNonVetServ))+geom_col(width = 0.5)+
+  geom_text(aes(label = scales::percent(percent)),position = position_stack(vjust = .5))+
+  ggtitle("In the last two weeks, \n have you used any non-veterinary services for your pet(s)?")
+```
+
+
+```{r AvailNonVetServ model and UseNonVetServ model}
+m1 <- clm(AvailNonVetServ ~ MostAttach, data = wave3)
+m2 <- glm(UseNonVetServ ~ MostAttach, data = wave3, family = "binomial")
+coef1 <- summary(m1)$coefficients
+coef2 <- summary(m2)$coef[2,]
+coef <- rbind(tail(coef1,1),coef2)
+rownames(coef) <- rep("MostAttachCat",2)
+colnames(coef)[4] <- "pvalue"
+
+colns <- colnames(coef)
+rowns <- rownames(coef)
+coef <- coef %>%
+  round(3) %>%
+  as.data.frame() %>%
+  mutate(Model=rowns) %>%
+  select(Model,colns[-3])
+
+coef %>%
+  mutate(pvalue = cell_spec(pvalue, "latex", color = ifelse(pvalue < 0.05, "red", "black"))) %>%
+  kable("latex", escape = F, booktabs = T, linesep = "")%>%
+  kable_styling(latex_options = "hold_position")%>%
+  pack_rows("AvailNonVetServ ~ MostAttach", 1, 1) %>%
+  pack_rows("UseNonVetServ ~ MostAttach", 2, 2)
+```
+
+\pagebreak
+\subsubsection{AvailVetServ and UsedVetServ}
+```{r AvailVetServ plot,fig.height=3.5,fig.width=5.5, fig.align = "center"}
+sumdata1 <- wave3 %>%
+  group_by(MostAttach) %>%
+  summarise(count = n())
+
+sumdata2 <- wave3 %>%
+  group_by(MostAttach,AvailVetServ) %>%
+  summarise(percent = n())
+
+sumdata2 <- merge(sumdata2,sumdata1,by=c("MostAttach"))
+sumdata2$percent <- sumdata2$percent/sumdata2$count
+levels(sumdata2$AvailVetServ) <- c("Much less available","Somewhat less available",
+                               "About the same","Somewhat more available",
+                               "Much more available")
+
+ggplot(sumdata2, aes(x=MostAttach,y=percent,fill=AvailVetServ))+geom_col(width = 0.5)+
+  geom_text(aes(label = scales::percent(percent)),position = position_stack(vjust = .5))+
+  ggtitle("Compared to two weeks ago, would you say \n veterinary services are more or less available today?")
+```
+
+```{r UsedVetServ plot,fig.height=3.5,fig.width=5.5, fig.align = "center"}
+sumdata1 <- wave3 %>%
+  group_by(MostAttach) %>%
+  summarise(count = n())
+
+sumdata2 <- wave3 %>%
+  group_by(MostAttach,UsedVetServ) %>%
+  summarise(percent = n())
+
+sumdata2 <- merge(sumdata2,sumdata1,by=c("MostAttach"))
+sumdata2$percent <- sumdata2$percent/sumdata2$count
+levels(sumdata2$UsedVetServ) <- c("No","Yes")
+
+ggplot(sumdata2, aes(x=MostAttach,y=percent,fill=UsedVetServ))+geom_col(width = 0.5)+
+  geom_text(aes(label = scales::percent(percent)),position = position_stack(vjust = .5))+
+  ggtitle("In the last two weeks, \n have you used any veterinary services for your pet(s)?")
+```
+
+```{r AvailVetServ model and UsedVetServ model}
+m1 <- clm(AvailVetServ ~ MostAttach, data = wave3)
+m2 <- glm(UsedVetServ ~ MostAttach, data = wave3, family = "binomial")
+coef1 <- summary(m1)$coefficients
+coef2 <- summary(m2)$coef[2,]
+coef <- rbind(tail(coef1,1),coef2)
+rownames(coef) <- rep("MostAttachCat",2)
+colnames(coef)[4] <- "pvalue"
+
+colns <- colnames(coef)
+rowns <- rownames(coef)
+coef <- coef %>%
+  round(3) %>%
+  as.data.frame() %>%
+  mutate(Model=rowns) %>%
+  select(Model,colns[-3])
+
+coef %>%
+  mutate(pvalue = cell_spec(pvalue, "latex", color = ifelse(pvalue < 0.05, "red", "black"))) %>%
+  kable("latex", escape = F, booktabs = T, linesep = "")%>%
+  kable_styling(latex_options = "hold_position")%>%
+  pack_rows("AvailVetServ ~ MostAttach", 1, 1) %>%
+  pack_rows("UsedVetServ ~ MostAttach", 2, 2)
+```
