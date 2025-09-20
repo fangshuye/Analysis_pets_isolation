@@ -1,0 +1,247 @@
+---
+title: "Reply to questions in Pet-Covid Analysis"
+author: "Fangshu Ye"
+date: "04/28/2023"
+output:
+  html_document:
+   toc: true
+   toc_float: true
+   collapsed: false
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = FALSE,message=FALSE,warning=FALSE,comment = NA)
+```
+
+
+```{r package}
+library(dplyr)
+library(knitr)
+library(kableExtra)
+library(formattable)
+library(gridExtra)
+library(gsheet)
+library(reshape)
+```
+
+# Q1: How often the other demographics changes between 1 and 2?
+
+```{r}
+# workerId we included in the end.
+setwd('/Users/fangshu/Desktop/research/Analysis_pets_isolation/COVIDandPETS-master/cleaned_data/')
+alldata <- c()
+for (d in 1:4) {
+  if(d %in% c(1,2)){
+    wave <- read.csv(paste0("wave",d,"_cleaned_0805.csv")) 
+  }else{
+    wave <- read.csv(paste0("wave",d,"_cleaned_20210615.csv")) 
+  }
+
+  wave <- data.frame(dplyr::select(wave,workerId,PetOwner,
+                           Kessler1,Kessler2,Kessler3,Kessler4,Kessler5,
+                           Kessler6,Kessler7,Kessler8,Kessler9,Kessler10,
+                           Gad1,Gad2,Gad3,Gad4,Gad5,Gad6,Gad7,
+                           Lonely1,Lonely2,Lonely3,
+                           Risk1,Risk2,Risk3,
+                           genhealth,RecordedDate,state))
+  
+  wave$Wave <- rep(paste0('Wave ',d),nrow(wave))
+  alldata <- rbind(alldata,wave)
+}
+allworker <- unique(alldata$workerId)
+```
+
+
+```{r}
+setwd('/Users/fangshu/Desktop/research/Analysis_pets_isolation/COVIDandPETS-master/rawdata')
+rawdata1 <- read.csv("2020-4-17\ COVID_Raw_Data.csv")
+rawdata1 <- rawdata1[-3,] # remove the test row
+rawdata1 <- rawdata1[-which(rawdata1$age=="110"),] # delete the outlier of age
+rawdata2 <- read.csv("2020-5-6\ COVID_Raw_Data.csv")
+rawdatalist <- list(rawdata1,rawdata2)
+
+for(d in 1:2){
+  dat <- rawdatalist[[d]]
+  dat <- dat[-c(1,2),] # remove the first+second row for easier data manipulation
+  dat <- dat %>%
+    mutate(workerId=as.character(as.factor(workerId))) 
+  dat <- dat %>% 
+      filter(Q66 == "5")
+  
+  dat <- dat %>%
+    filter(workerId %in% allworker)
+  
+  rawdatalist[[d]] <- dat
+  
+  if(d==2){
+    dat[dat$workerId=="A1C7XI68SED8JE","state"] <- 23
+  }
+}
+
+wave1 <- rawdatalist[[1]]
+wave2 <- rawdatalist[[2]]
+```
+
+For all the demographic variables, we don't ask those question in wave 3 and 4 except for **age** and **gender**. I assume that is why we use **age** and **gender** for consistency checking over the all 4 waves.
+
+Let's check the consistency for demographic information other than age and gender for wave 1 and wave 2 for those respondents we include for our final analysis. Among all the demographic information below, the statement ("When differences between demographic information other than age and gender in Survey 1 and Survey 2 occurred, we used the demographic responses from Survey 1, based on the idea that people were likely to provide more accurate data the first time they were required to answer a survey.") is true for **ethnic** and **state**. <span style="color: red;">For others, we didn't do anything in data cleaning and just leave it there. </span>
+
+## ethnic
+
+```{r, echo=TRUE}
+merged_1_2 <- merge(wave1, wave2, by = "workerId")
+merged_1_2_diff <- merged_1_2 %>% filter(ethnic.x != ethnic.y)
+nrow(merged_1_2_diff)
+```
+
+2 respondents have different answers to 'ethnic' for wave 1 and wave 2. 
+
+## state
+
+```{r, echo=TRUE}
+merged_1_2_diff <- merged_1_2 %>% filter(state.x != state.y)
+nrow(merged_1_2_diff)
+```
+
+Only 1 respondent have different answers to 'state' for wave 1 and wave 2. 
+
+## ed
+
+```{r, echo=TRUE}
+merged_1_2_diff <- merged_1_2 %>% filter(ed.x != ed.y)
+nrow(merged_1_2_diff)
+```
+
+7 respondents have different answers to 'ed' for wave 1 and wave 2. 
+
+## income
+
+```{r, echo=TRUE}
+merged_1_2_diff <- merged_1_2 %>% filter(income.x != income.y)
+nrow(merged_1_2_diff)
+```
+
+82 respondents have different answers to 'income' for wave 1 and wave 2. 
+
+## married
+
+```{r, echo=TRUE}
+merged_1_2_diff <- merged_1_2 %>% filter(married.x != married.y)
+nrow(merged_1_2_diff)
+```
+
+8 respondents have different answers to 'married' for wave 1 and wave 2. 
+
+
+## hhsize
+
+```{r, echo=TRUE}
+merged_1_2_diff <- merged_1_2 %>% filter(hhsize.x != hhsize.y)
+nrow(merged_1_2_diff)
+```
+
+79 respondents have different answers to 'hhsize' for wave 1 and wave 2. 
+
+## children
+
+```{r, echo=TRUE}
+merged_1_2_diff <- merged_1_2 %>% filter(children.x != children.y)
+nrow(merged_1_2_diff)
+```
+
+22 respondents have different answers to 'children' for wave 1 and wave 2. 
+
+
+## religion
+
+```{r, echo=TRUE}
+merged_1_2_diff <- merged_1_2 %>% filter(religion.x != religion.y)
+nrow(merged_1_2_diff)
+```
+
+78 respondents have different answers to 'religion' for wave 1 and wave 2. 
+
+## psychproblem
+
+```{r, echo=TRUE}
+merged_1_2_diff <- merged_1_2 %>% filter(psychproblem.x != psychproblem.y)
+nrow(merged_1_2_diff)
+```
+
+28 respondents have different answers to 'psychproblem' for wave 1 and wave 2. 
+
+# Q2: **PetOwner**:  How many pet owners versus not pet owners
+
+
+
+```{r data prep pet owners}
+setwd('/Users/fangshu/Desktop/research/Analysis_pets_isolation/COVIDandPETS-master/cleaned_data/')
+rm(list = ls())
+policy <- read.csv("cleaned_SIP.csv",header = T)
+policy$date <- as.Date(policy$date)
+policy <- policy[order(policy$statename,policy$date),]
+policy <- policy[,-1]
+
+rawdatalist <- list()
+alldata <- c()
+for (d in 1:4) {
+  if(d %in% c(1,2)){
+    rawdatalist[[d]] <- read.csv(paste0("wave",d,"_cleaned_0805.csv")) 
+  }else{
+    rawdatalist[[d]] <- read.csv(paste0("wave",d,"_cleaned_20210615.csv")) 
+  }
+
+  wave <- data.frame(dplyr::select(rawdatalist[[d]],workerId,PetOwner,
+                           Kessler1,Kessler2,Kessler3,Kessler4,Kessler5,
+                           Kessler6,Kessler7,Kessler8,Kessler9,Kessler10,
+                           Gad1,Gad2,Gad3,Gad4,Gad5,Gad6,Gad7,
+                           Lonely1,Lonely2,Lonely3,
+                           Risk1,Risk2,Risk3,
+                           genhealth,RecordedDate,state))
+  
+  wave$Wave <- rep(paste0('Wave ',d),nrow(wave))
+  alldata <- rbind(alldata,wave)
+}
+unlist_date <- unlist(strsplit(alldata$RecordedDate, " "))
+position <- seq(1,nrow(alldata)*2,2)
+alldata$date <- unlist_date[position]
+alldata$date <- as.Date(alldata$date,format="%m/%d/%y")
+alldata <- merge(alldata,policy,by=c("state","date"))
+
+alldata <- alldata %>% mutate(PetOwner = ifelse(PetOwner == 0, 'No', 'Yes'))
+#levels(alldata$PetOwner) <- c("No","Yes")
+```
+
+
+
+```{r}
+table(alldata$PetOwner, alldata$Wave) %>%
+  kable(escape = F, booktabs = T, linesep = "",
+        caption = 'Number of PetOwner (No and Yes) within each Wave')%>%
+  kable_styling()
+```
+
+Combing all four waves together, we have 738 unique respondents in total.
+
+```{r, echo=TRUE}
+length(unique(alldata$workerId))
+```
+
+
+```{r}
+subdat <- alldata[,c('workerId','PetOwner')]
+subdat <- unique(subdat)
+table(subdat$PetOwner)
+```
+
+
+Among 738 respondents among all waves, the number of pet owners is 437.
+
+
+# Q3: **shelter-in-place information**:  Source?
+
+[Google sheet](https://docs.google.com/spreadsheets/d/1zu9qEWI8PsOI_i8nI_S29HDGHlIp2lfVMsGxpQ5tvAQ/edit#gid=1894978869)
+
+Citation: Raifman J, Nocka K, Jones D, Bor J, Lipson S, Jay J, and Chan P. (2020). "COVID-19 US state policy database." Available at: www.tinyurl.com/statepolicies
+
+

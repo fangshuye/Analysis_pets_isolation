@@ -1,0 +1,470 @@
+---
+title: "Cat owners versus dogs owners"
+output:
+  pdf_document: default
+  html_notebook: default
+header-includes: \usepackage{float} 
+                 \usepackage{xcolor}
+---
+
+### data preparation
+```{r input data,warning=FALSE,message=FALSE,comment=F,include=FALSE}
+rm(list = ls())
+setwd('/Users/fangshu/Desktop/research/Analysis_pets_isolation/COVIDandPETS-master/cleaned_data/')
+library(dplyr)
+library(ggplot2)
+library(lme4)
+library(knitr)
+library(kableExtra)
+library(ordinal)
+library(formattable)
+rawdatalist <- list()
+for (d in 1:4) {
+  rawdatalist[[d]] <- read.csv(paste0("wave",d,"_cleaned_0622.csv"))
+}
+```
+
+
+```{r constract dataset for modeling}
+workerid_four <- intersect(rawdatalist[[1]]$workerId,rawdatalist[[2]]$workerId)
+workerid_four <- intersect(workerid_four,rawdatalist[[3]]$workerId)
+workerid_four <- intersect(workerid_four,rawdatalist[[4]]$workerId)
+alldata <- c()
+for (d in 1:4) {
+  rawdatalist[[d]] <- rawdatalist[[d]] %>%
+    filter(PetOwner==1) %>%
+    filter(MostAttach %in% c(1,2))
+  
+  wave <- data.frame(dplyr::select(rawdatalist[[d]],workerId,MostAttach,
+                           Compliance,Interact,
+                           Concern,
+                           CCAS1,CCAS2,CCAS3,CCAS4,CCAS5,CCAS6,CCAS7,
+                           CCAS8,CCAS9,CCAS10,CCAS11,CCAS12,CCAS13))
+  timepoint <- paste0("T",d)
+  
+  wave$time <- rep(timepoint,nrow(wave))
+  
+  alldata <- rbind(alldata,wave)
+}
+alldata <- alldata %>%
+  mutate(num=ifelse(workerId %in% workerid_four,"four","once_twice_three")) 
+cols <- colnames(alldata)
+alldata[cols] <- lapply(alldata[cols], factor) 
+levels(alldata$MostAttach) <- c("Dog","Cat")
+```
+
+
+### Compliance
+```{r Compliance plot, echo=FALSE}
+sumdata1 <- alldata %>%
+  group_by(time,MostAttach) %>%
+  summarise(count = n())
+
+sumdata2 <- alldata %>%
+  group_by(time,MostAttach,Compliance) %>%
+  summarise(percent = n())
+
+sumdata2 <- merge(sumdata2,sumdata1,by=c("time","MostAttach"))
+sumdata2$percent <- sumdata2$percent/sumdata2$count
+
+ggplot(sumdata2, aes(x=MostAttach,y=percent,fill=Compliance))+geom_col(width = 0.5)+facet_grid(time~.)+
+  geom_text(aes(label = scales::percent(percent)),position = position_stack(vjust = .5))
+```
+
+```{r Compliance model, echo=FALSE}
+m4 <- glmer(Compliance ~ MostAttach + time + (1|workerId), data = alldata, family = "binomial",nAGQ = 9)
+summary(m4)$coef[-1,]
+```
+
+
+### Interact
+```{r Interact plot, echo=FALSE}
+sumdata1 <- alldata %>%
+  group_by(time,MostAttach) %>%
+  summarise(count = n())
+
+sumdata2 <- alldata %>%
+  group_by(time,MostAttach,Interact) %>%
+  summarise(percent = n())
+
+sumdata2 <- merge(sumdata2,sumdata1,by=c("time","MostAttach"))
+sumdata2$percent <- sumdata2$percent/sumdata2$count
+
+ggplot(sumdata2, aes(x=MostAttach,y=percent,fill=Interact))+geom_col(width = 0.5)+facet_grid(time~.)+
+  geom_text(aes(label = scales::percent(percent)),position = position_stack(vjust = .5))
+```
+
+```{r Interact model, echo=FALSE}
+m3 <- glmer(Interact ~ MostAttach + time + (1|workerId), data = alldata, family = "binomial",nAGQ = 9)
+summary(m3)$coef[-1,]
+```
+
+### Concern
+```{r Concern plot}
+sumdata1 <- alldata %>%
+  group_by(time,MostAttach) %>%
+  summarise(count = n())
+
+sumdata2 <- alldata %>%
+  group_by(time,MostAttach,Concern) %>%
+  summarise(percent = n())
+
+sumdata2 <- merge(sumdata2,sumdata1,by=c("time","MostAttach"))
+sumdata2$percent <- sumdata2$percent/sumdata2$count
+
+levels(sumdata2$Concern) <- c("Not at all concerned","A little concerned ",
+                               "Moderately concerened","Very concerned",
+                               "Extremely concerned")
+
+ggplot(sumdata2, aes(x=MostAttach,y=percent,fill=Concern))+geom_col(width = 0.5)+facet_wrap(~time)+
+  geom_text(aes(label = scales::percent(percent)),position = position_stack(vjust = .5))+
+  ggtitle("How concerned are you about your ability \n to care for your pets/companion animal(s)?")
+```
+
+```{r Concern model, echo=FALSE}
+m <- clmm(Concern ~ MostAttach + time + (1|workerId), data = alldata,nAGQ = 9)
+coef_4 <- summary(m)$coefficients
+coef <- coef_4[(nrow(coef_4)-3):nrow(coef_4),]
+coef
+```
+
+
+
+### CCAS1-13
+```{r MCMCglmm eg}
+# set.seed(1111)
+# m1 <- MCMCglmm(CCAS1~MostAttach,data=alldata[alldata$time=="T1",], family="ordinal", verbose=FALSE)
+# m2 <- MCMCglmm(CCAS1~MostAttach,data=alldata[alldata$time=="T2",], family="ordinal", verbose=FALSE)
+# m3 <- MCMCglmm(CCAS1~MostAttach + time,
+#                    random=~workerId, data=alldata, family="ordinal", verbose=FALSE)
+# m4 <- MCMCglmm(CCAS1~MostAttach + time + MostAttach*time,
+#                    random=~workerId, data=alldata, family="ordinal", verbose=FALSE)
+# coef <- rbind(summary(m1)$solutions[-1,],summary(m2)$solutions[-1,],
+#               summary(m3)$solutions[-1,],summary(m4)$solutions[-1,])
+# row.names(coef)[1:2] <- c("MostAttachCat","MostAttachCat")
+# coef %>%
+#   kable() %>%
+#   kable_styling()%>%
+#   pack_rows("T1: CCAS1 ~ MostAttach", 1, 1) %>%
+#   pack_rows("T2: CCAS1 ~ MostAttach", 2, 2) %>%
+#   pack_rows("T1+T2: CCAS1 ~ MostAttach + time + (1|workerId)", 3, 4) %>%
+#   pack_rows("T1+T2: CCAS1 ~ MostAttach + time + MostAttach*time + (1|workerId)", 5, 7)
+```
+
+
+```{r CCAS1-13 model}
+coef <- c()
+for(q in 1:13){
+  formula <- as.formula(paste0("CCAS",q,"~","MostAttach + time + (1|workerId)"))
+  if(q==11){
+    m <- clmm(formula, data = alldata,nAGQ = 10)
+  }else{
+    m <- clmm(formula, data = alldata,nAGQ = 9)
+  }
+  coef_q <- summary(m)$coefficients
+  coef <- rbind(coef,coef_q[(nrow(coef_q)-3):nrow(coef_q),])
+}
+coef %>%
+  kable(caption = "Ordinal Logistic Regression: y ~ MostAttach + time + (1|workerId)") %>%
+  kable_styling()%>%
+  pack_rows("CCAS1", 1, 4) %>%
+  pack_rows("CCAS2", 5, 8) %>%
+  pack_rows("CCAS3", 9, 12) %>%
+  pack_rows("CCAS4", 13, 16) %>%
+  pack_rows("CCAS5", 17, 20) %>%
+  pack_rows("CCAS6", 21, 24) %>%
+  pack_rows("CCAS7", 25, 28) %>%
+  pack_rows("CCAS8", 29, 32) %>%
+  pack_rows("CCAS9", 33, 36) %>%
+  pack_rows("CCAS10", 37, 40) %>%
+  pack_rows("CCAS11", 41, 44) %>%
+  pack_rows("CCAS12", 45, 48) %>%
+  pack_rows("CCAS13", 49, 52)
+```
+
+## Unique questions for WAVE2
+```{r,echo=FALSE}
+wave2 <- data.frame(dplyr::select(rawdatalist[[2]],workerId,MostAttach,
+                           NonVetService,NonVetLessFreq,
+                           VetVisit,VetVisitFreq,
+                           PetHealth,))
+cols <- colnames(wave2)
+wave2[cols] <- lapply(wave2[cols], factor) 
+levels(wave2$MostAttach) <- c("Dog","Cat")
+```
+
+### NonVetService
+
+```{r NonVetService plot}
+sumdata1 <- wave2 %>%
+  group_by(MostAttach) %>%
+  summarise(count = n())
+
+sumdata2 <- wave2 %>%
+  group_by(MostAttach,NonVetService) %>%
+  summarise(percent = n())
+
+sumdata2 <- merge(sumdata2,sumdata1,by=c("MostAttach"))
+sumdata2$percent <- sumdata2$percent/sumdata2$count
+
+ggplot(sumdata2, aes(x=MostAttach,y=percent,fill=NonVetService))+geom_col(width = 0.5)+
+  geom_text(aes(label = scales::percent(percent)),position = position_stack(vjust = .5))
+```
+
+```{r NonVetService model, echo=FALSE}
+m <- glm(NonVetService ~ MostAttach, data = wave2, family = "binomial")
+summary(m)$coef
+```
+
+### NonVetLessFreq
+
+```{r NonVetLessFreq plot, echo=FALSE}
+sumdata1 <- wave2 %>%
+  filter(NonVetService==1) %>%
+  group_by(MostAttach) %>%
+  summarise(count = n())
+
+sumdata2 <- wave2 %>%
+  filter(NonVetService==1) %>%
+  group_by(MostAttach,NonVetLessFreq) %>%
+  summarise(percent = n())
+
+sumdata2 <- merge(sumdata2,sumdata1,by=c("MostAttach"))
+sumdata2$percent <- sumdata2$percent/sumdata2$count
+
+ggplot(sumdata2, aes(x=MostAttach,y=percent,fill=NonVetLessFreq))+geom_col(width = 0.5)+
+  geom_text(aes(label = scales::percent(percent)),position = position_stack(vjust = .5))
+```
+
+```{r NonVetLessFreq model, echo=FALSE}
+wave2_nonfreq <- wave2 %>%
+  filter(NonVetService==1)
+m <- glm(NonVetLessFreq ~ MostAttach, data = wave2_nonfreq, family = "binomial")
+summary(m)$coef
+```
+
+
+### VetVisit
+
+
+```{r VetVisit plot, echo=FALSE}
+sumdata1 <- wave2 %>%
+  group_by(MostAttach) %>%
+  summarise(count = n())
+
+sumdata2 <- wave2 %>%
+  group_by(MostAttach,VetVisit) %>%
+  summarise(percent = n())
+
+sumdata2 <- merge(sumdata2,sumdata1,by=c("MostAttach"))
+sumdata2$percent <- sumdata2$percent/sumdata2$count
+
+ggplot(sumdata2, aes(x=MostAttach,y=percent,fill=VetVisit))+geom_col(width = 0.5)+
+  geom_text(aes(label = scales::percent(percent)),position = position_stack(vjust = .5))
+```
+
+```{r VetVisit model, echo=FALSE}
+m <- glm(VetVisit ~ MostAttach, data = wave2, family = "binomial")
+summary(m)$coef
+```
+
+### VetLessFreq
+
+```{r VetLessFreq plot, echo=FALSE}
+sumdata1 <- wave2 %>%
+  filter(VetVisit==1) %>%
+  group_by(MostAttach) %>%
+  summarise(count = n())
+
+sumdata2 <- wave2 %>%
+  filter(VetVisit==1) %>%
+  group_by(MostAttach,VetLessFreq) %>%
+  summarise(percent = n())
+
+sumdata2 <- merge(sumdata2,sumdata1,by=c("MostAttach"))
+sumdata2$percent <- sumdata2$percent/sumdata2$count
+
+ggplot(sumdata2, aes(x=MostAttach,y=percent,fill=VetLessFreq))+geom_col(width = 0.5)+
+  geom_text(aes(label = scales::percent(percent)),position = position_stack(vjust = .5))
+```
+
+```{r VetLessFreq model, echo=FALSE}
+wave2_nonfreq <- wave2 %>%
+  filter(VetVisit==1)
+m <- glm(VetLessFreq ~ MostAttach, data = wave2_nonfreq, family = "binomial")
+summary(m)$coef
+```
+
+
+
+### PetHealth
+```{r PetHealth plot, echo=FALSE}
+sumdata1 <- wave2 %>%
+  group_by(MostAttach) %>%
+  summarise(count = n())
+
+sumdata2 <- wave2 %>%
+  group_by(MostAttach,PetHealth) %>%
+  summarise(percent = n())
+
+sumdata2 <- merge(sumdata2,sumdata1,by=c("MostAttach"))
+sumdata2$percent <- sumdata2$percent/sumdata2$count
+
+ggplot(sumdata2, aes(x=MostAttach,y=percent,fill=PetHealth))+geom_col(width = 0.5)+
+  geom_text(aes(label = scales::percent(percent)),position = position_stack(vjust = .5))
+```
+
+```{r PetHealth model, echo=FALSE}
+m <- glm(PetHealth ~ MostAttach, data = wave2, family = "binomial")
+summary(m)$coef
+```
+
+
+## Unique questions for WAVE3 and WAVE4
+```{r wave3}
+wave_3_4 <- c()
+for (d in 3:4) {
+  wave <- data.frame(dplyr::select(rawdatalist[[d]],workerId,MostAttach,
+                           AvailNonVetServ,UseNonVetServ,WhichNonVetServ,
+                           AvailVetServ,UsedVetServ,WhichVetServ))
+  timepoint <- paste0("T",d)
+  
+  wave$time <- rep(timepoint,nrow(wave))
+  
+  wave_3_4  <- rbind(wave_3_4 ,wave)
+}
+
+cols <- colnames(wave_3_4)
+wave_3_4[cols] <- lapply(wave_3_4[cols], factor) 
+levels(wave_3_4$MostAttach) <- c("Dog","Cat")
+```
+
+
+Data Size
+```{r data size wave3}
+table(wave_3_4$MostAttach,wave_3_4$time)
+```
+
+### AvailNonVetServ: Compared to two weeks ago, would you say non-veterinary services (e.g. grooming, boarding, etc.) are more or less available today?
+- Much less available  (1) 
+- Somewhat less available  (2) 
+- About the same  (3) 
+- Somewhat more available  (4) 
+- Much more available  (5) 
+
+```{r AvailNonVetServ plot}
+sumdata1 <- wave_3_4 %>%
+  group_by(time,MostAttach) %>%
+  summarise(count = n())
+
+sumdata2 <- wave_3_4 %>%
+  group_by(time,MostAttach,AvailNonVetServ) %>%
+  summarise(percent = n())
+
+sumdata2 <- merge(sumdata2,sumdata1,by=c("time","MostAttach"))
+sumdata2$percent <- sumdata2$percent/sumdata2$count
+levels(sumdata2$AvailNonVetServ) <- c("Much less available","Somewhat less available",
+                               "About the same","Somewhat more available",
+                               "Much more available")
+
+ggplot(sumdata2, aes(x=MostAttach,y=percent,fill=AvailNonVetServ))+geom_col(width = 0.5)+facet_grid(.~time)+
+  geom_text(aes(label = scales::percent(percent)),position = position_stack(vjust = .5))+
+  ggtitle("Compared to two weeks ago, would you say \n non-veterinary services are more or less available today?")
+```
+
+```{r AvailNonVetServ model}
+m <- clmm(AvailNonVetServ ~ MostAttach + time + (1|workerId), data = wave_3_4, nAGQ = 9)
+coef <- summary(m)$coefficients
+coef[(nrow(coef)-1):nrow(coef),]
+```
+
+### UseNonVetServ: In the last two weeks, have you used any non-veterinary services for your pet(s)?
+- Yes  (1) 
+- No  (0) 
+```{r UseNonVetServ plot}
+sumdata1 <- wave_3_4 %>%
+  group_by(time,MostAttach) %>%
+  summarise(count = n())
+
+sumdata2 <- wave_3_4 %>%
+  group_by(time,MostAttach,UseNonVetServ) %>%
+  summarise(percent = n())
+
+sumdata2 <- merge(sumdata2,sumdata1,by=c("time","MostAttach"))
+sumdata2$percent <- sumdata2$percent/sumdata2$count
+levels(sumdata2$UseNonVetServ) <- c("No","Yes")
+
+ggplot(sumdata2, aes(x=MostAttach,y=percent,fill=UseNonVetServ))+geom_col(width = 0.5)+facet_grid(.~time)+
+  geom_text(aes(label = scales::percent(percent)),position = position_stack(vjust = .5))+
+  ggtitle("In the last two weeks, \n have you used any non-veterinary services for your pet(s)?")
+```
+
+
+```{r UseNonVetServ model, echo=FALSE}
+m <- glmer(UseNonVetServ ~ MostAttach + time + (1|workerId), data = wave_3_4,family = "binomial",nAGQ = 9)
+coef <- summary(m)$coefficients
+coef[(nrow(coef)-1):nrow(coef),]
+```
+
+### AvailVetServ: Compared to two weeks ago, would you say veterinary services are more or less available today?
+- Much less available  (1) 
+- Somewhat less available  (2) 
+- About the same  (3) 
+- Somewhat more available  (4) 
+- Much more available  (5) 
+
+```{r AvailVetServ plot}
+sumdata1 <- wave_3_4 %>%
+  group_by(time,MostAttach) %>%
+  summarise(count = n())
+
+sumdata2 <- wave_3_4 %>%
+  group_by(time,MostAttach,AvailVetServ) %>%
+  summarise(percent = n())
+
+sumdata2 <- merge(sumdata2,sumdata1,by=c("time","MostAttach"))
+sumdata2$percent <- sumdata2$percent/sumdata2$count
+levels(sumdata2$AvailVetServ) <- c("Much less available","Somewhat less available",
+                               "About the same","Somewhat more available",
+                               "Much more available")
+
+ggplot(sumdata2, aes(x=MostAttach,y=percent,fill=AvailVetServ))+geom_col(width = 0.5)+facet_grid(.~time)+
+  geom_text(aes(label = scales::percent(percent)),position = position_stack(vjust = .5))+
+  ggtitle("Compared to two weeks ago, would you say \n veterinary services are more or less available today?")
+```
+
+```{r AvailVetServ model}
+m <- clmm(AvailVetServ ~ MostAttach + time + (1|workerId), data = wave_3_4, nAGQ = 9)
+coef <- summary(m)$coefficients
+coef[(nrow(coef)-1):nrow(coef),]
+```
+
+### UsedVetServ: In the last two weeks, have you used any veterinary services for your pet(s)?
+- Yes  (1) 
+- No  (0) 
+```{r UsedVetServv plot}
+sumdata1 <- wave_3_4 %>%
+  group_by(time,MostAttach) %>%
+  summarise(count = n())
+
+sumdata2 <- wave_3_4 %>%
+  group_by(time,MostAttach,UsedVetServ) %>%
+  summarise(percent = n())
+
+sumdata2 <- merge(sumdata2,sumdata1,by=c("time","MostAttach"))
+sumdata2$percent <- sumdata2$percent/sumdata2$count
+levels(sumdata2$UsedVetServ) <- c("No","Yes")
+
+ggplot(sumdata2, aes(x=MostAttach,y=percent,fill=UsedVetServ))+geom_col(width = 0.5)+facet_grid(.~time)+
+  geom_text(aes(label = scales::percent(percent)),position = position_stack(vjust = .5))+
+  ggtitle("In the last two weeks, \n have you used any veterinary services for your pet(s)?")
+```
+
+
+```{r UsedVetServ model, echo=FALSE}
+m <- glmer(UsedVetServ ~ MostAttach + time + (1|workerId), data = wave_3_4,family = "binomial",nAGQ = 9)
+coef <- summary(m)$coefficients
+coef[(nrow(coef)-1):nrow(coef),]
+```
+
+

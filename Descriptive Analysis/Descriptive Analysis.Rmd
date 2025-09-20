@@ -1,0 +1,161 @@
+---
+title: "Descriptive Analysis of Demographic Information"
+author: "Fangshu Ye"
+date: "5/28/2020"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+
+Below are the demographic information of the people who completed the survey once versus people who completed it twice.
+
+```{r data checking,warning=FALSE,message=FALSE,comment=F,include=FALSE}
+setwd('/Users/fangshu/Desktop/research/Analysis_pets_isolation/COVIDandPETS-master/cleaned_data/')
+rm(list = ls())
+library(dplyr)
+library(ggplot2)
+rawdata1 <- read.csv("wave1_cleaned_0527.csv")
+rawdata2 <- read.csv("wave2_cleaned_0527.csv")
+
+#3) demographic information of the people who completed the survey once versus people who completed it twice
+### combine all waves into one dataset
+workerid_twice <- intersect(rawdata1$workerId,rawdata2$workerId)
+demo_info1 <- data.frame(select(rawdata1,workerId,
+                             age,gender,ethnic,ed,income, married, 
+                             hhsize, children, religion, psychproblem, genhealth))
+demo_info2 <- data.frame(select(rawdata2,workerId,
+                                age,gender,ethnic,ed,income, married, 
+                                hhsize, children, religion, psychproblem, genhealth))
+demo_info2 <- demo_info2 %>% 
+  filter(!(workerId %in% workerid_twice))
+alldata <- rbind(demo_info1,demo_info2)
+alldata <- droplevels(alldata) # drop useless levels
+
+alldata <- alldata %>%
+  mutate(num=ifelse(workerId %in% workerid_twice,"twice","once")) 
+
+cols <- colnames(alldata)[-2]
+alldata[cols] <- lapply(alldata[cols], factor) 
+
+### rename the levels
+levels(alldata$gender) <- c('Male','Female','Other')
+levels(alldata$ethnic) <- c('White','Hispanic or Latino','Black or African American',
+                            'Native American or American Indian','Asian or Pacific Islander','Other')
+levels(alldata$ed) <- c("Less than high school degree","High school graduate (high school diploma or equivalent including GED)",
+                        "Some college but no degree","Associate degree in college (2-year)","Bachelor's degree in college (4-year)",
+                        "Master's degree","Doctoral degree","Professional degree (JD, MD)")
+levels(alldata$income) <- c("Less than $10,000","$10,000 to $19,999","$20,000 to $29,999","$30,000 to $39,999",
+                            "$40,000 to $49,999","$50,000 to $59,999","$60,000 to $69,999","$70,000 to $79,999",
+                            "$80,000 to $89,999","$90,000 to $99,999","$100,000 to $149,999","$150,000 or more")
+levels(alldata$married) <- c("Single, never married","Married or domestic partnership","Widowed","Divorced","Separated")
+levels(alldata$hhsize) <- c("1 (I live alone)","2","3","4","5","6","7","More than 7")
+levels(alldata$children) <- c("0 (no children)","1","2","3","4","5","6","7","More than 7")
+levels(alldata$religion) <- c("very conservative","conservative","somewhat conservative","middle of the road",
+                              "somewhat liberal","liberal","very liberal")
+levels(alldata$psychproblem) <- c("No","Yes")
+levels(alldata$genhealth) <- c("Bad","Not so good","So So","Good","Excellent")
+```
+
+#### Age
+
+```{r age,echo=FALSE}
+ggplot(alldata, aes(x=age)) + geom_histogram(binwidth=1) + facet_grid(num~.,scales="free_y")+
+  ggtitle("Frequency distribution of volunteers for once and twice, by age")
+```
+
+#### Gender
+
+```{r gender,echo=FALSE}
+ggplot(alldata, aes(x=gender)) + geom_bar(width=0.4) + facet_grid(num~.,scales="free_y")+
+  ggtitle("Frequency distribution of volunteers for once and twice, by gender")
+```
+
+#### Ethnic
+```{r ethnic,echo=FALSE}
+ggplot(alldata, aes(x=ethnic,fill=ethnic)) + geom_bar() + facet_grid(num~.,scales="free_y")+
+  theme(axis.title.x=element_blank(), 
+        axis.text.x=element_blank(),
+        axis.ticks.x=element_blank(),
+        legend.position = c(.75,.8),
+        legend.title = element_blank()) + 
+    ggtitle("Frequency distribution of volunteers for once and twice, by ethnic")
+```
+
+#### Education
+```{r education,echo=FALSE}
+ggplot(alldata, aes(x=ed,fill=ed)) + geom_bar() + facet_grid(num~.,scales="free_y")+
+  theme(axis.title.x=element_blank(), 
+        axis.text.x=element_blank(),
+        axis.ticks.x=element_blank(),
+        legend.text = element_text(size = 5),
+        legend.title = element_blank()) + 
+  ggtitle("Frequency distribution of volunteers for once and twice,\n by highest level of school or the highest degree")
+```
+
+#### Household income
+```{r income,echo=FALSE}
+ggplot(alldata, aes(x=income)) + geom_bar() + facet_grid(num~.,scales="free_y")+
+  theme(axis.title.x=element_blank(), 
+        axis.text.x =element_text(angle = 90),
+        #axis.ticks.x=element_blank(),
+        legend.position = c(.3,.7)
+        #legend.text = element_text(size = 6),
+        ) + 
+  ggtitle("Frequency distribution of volunteers for once and twice, \n by entire household income in (previous year) before taxes")
+```
+
+#### Marital status
+```{r married,echo=FALSE}
+ggplot(alldata, aes(x=married)) + geom_bar(width=0.4) + facet_grid(num~.,scales="free_y")+
+  theme(axis.title.x=element_blank(), 
+        axis.text.x =element_text(angle = 45)) + 
+  ggtitle("Frequency distribution of volunteers for once and twice, by marital status")
+```
+
+#### Total number of people(>=18 years old) live in the household
+```{r hhsize,echo=FALSE}
+ggplot(alldata, aes(x=hhsize)) + geom_bar(width = 0.4) + facet_grid(num~.,scales="free_y")+
+  theme(axis.title.x=element_blank(), 
+        axis.text.x =element_text(angle = 45)) + 
+  ggtitle("Frequency distribution of volunteers for once and twice, by \n total number of people(>=18 years old) live in the household")
+```
+
+
+#### Total number of people(<18 years old) live in the household
+```{r children,echo=FALSE}
+ggplot(alldata, aes(x=children)) + geom_bar(width = 0.4) + facet_grid(num~.,scales="free_y")+
+  theme(axis.title.x=element_blank(), 
+        axis.text.x =element_text(angle = 45)) + 
+  ggtitle("Frequency distribution of volunteers for once and twice, by \n total number of people(<18 years old) live in the household")
+```
+
+
+#### Political views
+```{r religion,echo=FALSE}
+ggplot(alldata, aes(x=religion)) + geom_bar(width = 0.4) + facet_grid(num~.,scales="free_y")+
+  theme(axis.title.x=element_blank(), 
+        axis.text.x =element_text(angle = 45)) + 
+  ggtitle("Frequency distribution of volunteers for once and twice, by political views")
+```
+
+
+#### Psychproblem
+```{r psychproblem,echo=FALSE}
+ggplot(alldata, aes(x=psychproblem)) + geom_bar(width=0.4) + facet_grid(num~.,scales="free_y")+
+  theme(axis.title.x=element_blank()) + 
+  ggtitle("Frequency distribution of volunteers for once and twice, by history of mental health problems")
+```
+
+
+#### General health
+```{r genhealth,echo=FALSE}
+ggplot(alldata, aes(x=genhealth)) + geom_bar() + facet_grid(num~.,scales="free_y")+
+  theme(axis.title.x=element_blank()) + 
+  ggtitle("Frequency distribution of volunteers for once and twice, by general health lately")
+```
+
+
+

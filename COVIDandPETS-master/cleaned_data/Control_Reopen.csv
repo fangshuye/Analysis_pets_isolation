@@ -1,0 +1,471 @@
+"statename","date","if_shelter","restaurant_closed_14","businesses_reopen_14","state"
+"Alabama","2020-04-17","yes","yes","no",1
+"Alabama","2020-05-04","yes","yes","yes",1
+"Alabama","2020-05-06","yes","yes","yes",1
+"Alabama","2020-04-20","yes","yes","no",1
+"Alabama","2020-05-26","yes","no","yes",1
+"Alabama","2020-06-16","yes","no","yes",1
+"Alabama","2020-06-17","yes","no","yes",1
+"Alabama","2020-05-27","yes","no","yes",1
+"Alabama","2020-05-05","yes","yes","yes",1
+"Alabama","2020-05-28","yes","no","yes",1
+"Alaska","2020-05-04","yes","yes","yes",2
+"Alaska","2020-05-06","yes","yes","yes",2
+"Alaska","2020-05-27","yes","no","yes",2
+"Alaska","2020-05-26","yes","no","yes",2
+"Alaska","2020-05-28","yes","no","yes",2
+"Alaska","2020-06-17","yes","no","yes",2
+"Alaska","2020-04-17","yes","yes","no",2
+"Alaska","2020-06-16","yes","no","yes",2
+"Alaska","2020-04-20","yes","yes","no",2
+"Alaska","2020-05-05","yes","yes","yes",2
+"Arizona","2020-05-26","yes","no","yes",3
+"Arizona","2020-05-27","yes","no","yes",3
+"Arizona","2020-06-16","yes","no","yes",3
+"Arizona","2020-05-04","yes","yes","no",3
+"Arizona","2020-05-06","yes","yes","no",3
+"Arizona","2020-05-05","yes","yes","no",3
+"Arizona","2020-04-17","yes","yes","no",3
+"Arizona","2020-05-28","yes","no","yes",3
+"Arizona","2020-06-17","yes","no","yes",3
+"Arizona","2020-04-20","yes","yes","no",3
+"Arkansas","2020-05-06","no","yes","yes",4
+"Arkansas","2020-05-27","no","no","yes",4
+"Arkansas","2020-05-26","no","no","yes",4
+"Arkansas","2020-06-17","no","no","yes",4
+"Arkansas","2020-05-05","no","yes","yes",4
+"Arkansas","2020-06-16","no","no","yes",4
+"Arkansas","2020-05-04","no","yes","yes",4
+"Arkansas","2020-04-20","no","yes","no",4
+"Arkansas","2020-04-17","no","yes","no",4
+"Arkansas","2020-05-28","no","no","yes",4
+"California","2020-05-06","yes","yes","no",5
+"California","2020-05-04","yes","yes","no",5
+"California","2020-06-17","yes","yes","yes",5
+"California","2020-05-27","yes","yes","yes",5
+"California","2020-05-26","yes","yes","yes",5
+"California","2020-05-28","yes","yes","yes",5
+"California","2020-04-20","yes","yes","no",5
+"California","2020-05-05","yes","yes","no",5
+"California","2020-06-16","yes","yes","yes",5
+"California","2020-04-17","yes","yes","no",5
+"Colorado","2020-06-16","yes","no","yes",6
+"Colorado","2020-05-04","yes","yes","yes",6
+"Colorado","2020-05-06","yes","yes","yes",6
+"Colorado","2020-04-17","yes","yes","no",6
+"Colorado","2020-05-26","yes","yes","yes",6
+"Colorado","2020-05-28","yes","yes","yes",6
+"Colorado","2020-05-27","yes","yes","yes",6
+"Colorado","2020-04-20","yes","yes","no",6
+"Colorado","2020-06-17","yes","no","yes",6
+"Colorado","2020-05-05","yes","yes","yes",6
+"Connecticut","2020-05-06","yes","yes","no",7
+"Connecticut","2020-05-27","yes","yes","yes",7
+"Connecticut","2020-04-20","yes","yes","no",7
+"Connecticut","2020-04-17","yes","yes","no",7
+"Connecticut","2020-06-16","yes","no","yes",7
+"Connecticut","2020-05-05","yes","yes","no",7
+"Connecticut","2020-06-17","yes","no","yes",7
+"Connecticut","2020-05-26","yes","yes","yes",7
+"Connecticut","2020-05-28","yes","yes","yes",7
+"Connecticut","2020-05-04","yes","yes","no",7
+"Delaware","2020-05-28","yes","yes","yes",8
+"Delaware","2020-05-27","yes","yes","yes",8
+"Delaware","2020-06-17","yes","no","yes",8
+"Delaware","2020-05-26","yes","yes","yes",8
+"Delaware","2020-04-20","yes","yes","no",8
+"Delaware","2020-05-06","yes","yes","no",8
+"Delaware","2020-06-16","yes","no","yes",8
+"Delaware","2020-05-05","yes","yes","no",8
+"Delaware","2020-05-04","yes","yes","no",8
+"Delaware","2020-04-17","yes","yes","no",8
+"District of Columbia","2020-05-28","yes","yes","no",9
+"District of Columbia","2020-04-20","yes","yes","no",9
+"District of Columbia","2020-06-16","yes","no","yes",9
+"District of Columbia","2020-06-17","yes","no","yes",9
+"District of Columbia","2020-05-26","yes","yes","no",9
+"District of Columbia","2020-05-27","yes","yes","no",9
+"District of Columbia","2020-05-04","yes","yes","no",9
+"District of Columbia","2020-04-17","yes","yes","no",9
+"District of Columbia","2020-05-05","yes","yes","no",9
+"District of Columbia","2020-05-06","yes","yes","no",9
+"Florida","2020-06-16","yes","no","yes",10
+"Florida","2020-05-28","yes","yes","yes",10
+"Florida","2020-04-20","yes","yes","no",10
+"Florida","2020-05-26","yes","yes","yes",10
+"Florida","2020-05-27","yes","yes","yes",10
+"Florida","2020-05-04","yes","yes","no",10
+"Florida","2020-06-17","yes","no","yes",10
+"Florida","2020-05-05","yes","yes","no",10
+"Florida","2020-04-17","yes","yes","no",10
+"Florida","2020-05-06","yes","yes","no",10
+"Georgia","2020-04-20","yes","yes","no",11
+"Georgia","2020-06-16","yes","no","yes",11
+"Georgia","2020-06-17","yes","no","yes",11
+"Georgia","2020-05-26","yes","no","yes",11
+"Georgia","2020-05-27","yes","no","yes",11
+"Georgia","2020-04-17","yes","yes","no",11
+"Georgia","2020-05-05","yes","yes","yes",11
+"Georgia","2020-05-28","yes","no","yes",11
+"Georgia","2020-05-06","yes","yes","yes",11
+"Georgia","2020-05-04","yes","yes","yes",11
+"Idaho","2020-04-20","yes","yes","no",13
+"Idaho","2020-06-17","yes","no","yes",13
+"Idaho","2020-05-26","yes","yes","yes",13
+"Idaho","2020-05-28","yes","yes","yes",13
+"Idaho","2020-06-16","yes","no","yes",13
+"Idaho","2020-05-27","yes","yes","yes",13
+"Idaho","2020-05-04","yes","yes","yes",13
+"Idaho","2020-04-17","yes","yes","no",13
+"Idaho","2020-05-05","yes","yes","yes",13
+"Idaho","2020-05-06","yes","yes","yes",13
+"Illinois","2020-06-17","yes","no","yes",14
+"Illinois","2020-05-27","yes","yes","no",14
+"Illinois","2020-04-20","yes","yes","no",14
+"Illinois","2020-05-04","yes","yes","no",14
+"Illinois","2020-05-26","yes","yes","no",14
+"Illinois","2020-05-05","yes","yes","no",14
+"Illinois","2020-05-28","yes","yes","no",14
+"Illinois","2020-05-06","yes","yes","no",14
+"Illinois","2020-06-16","yes","no","yes",14
+"Illinois","2020-04-17","yes","yes","no",14
+"Indiana","2020-04-17","yes","yes","no",15
+"Indiana","2020-05-05","yes","yes","no",15
+"Indiana","2020-06-17","yes","no","yes",15
+"Indiana","2020-05-04","yes","yes","no",15
+"Indiana","2020-06-16","yes","no","yes",15
+"Indiana","2020-05-27","yes","yes","yes",15
+"Indiana","2020-05-26","yes","yes","yes",15
+"Indiana","2020-04-20","yes","yes","no",15
+"Indiana","2020-05-28","yes","yes","yes",15
+"Indiana","2020-05-06","yes","yes","no",15
+"Iowa","2020-05-27","no","yes","yes",16
+"Iowa","2020-04-17","no","yes","no",16
+"Iowa","2020-06-17","no","no","yes",16
+"Iowa","2020-05-06","no","yes","no",16
+"Iowa","2020-05-28","no","yes","yes",16
+"Iowa","2020-06-16","no","no","yes",16
+"Iowa","2020-05-05","no","yes","no",16
+"Iowa","2020-05-26","no","yes","yes",16
+"Iowa","2020-05-04","no","yes","no",16
+"Iowa","2020-04-20","no","yes","no",16
+"Kansas","2020-05-28","yes","no","yes",17
+"Kansas","2020-05-27","yes","no","yes",17
+"Kansas","2020-06-16","yes","no","yes",17
+"Kansas","2020-04-20","yes","yes","no",17
+"Kansas","2020-04-17","yes","yes","no",17
+"Kansas","2020-06-17","yes","no","yes",17
+"Kansas","2020-05-06","yes","yes","yes",17
+"Kansas","2020-05-04","yes","yes","yes",17
+"Kansas","2020-05-26","yes","no","yes",17
+"Kansas","2020-05-05","yes","yes","yes",17
+"Kentucky","2020-05-27","yes","yes","yes",18
+"Kentucky","2020-04-17","yes","yes","no",18
+"Kentucky","2020-06-16","yes","no","yes",18
+"Kentucky","2020-04-20","yes","yes","no",18
+"Kentucky","2020-05-28","yes","yes","yes",18
+"Kentucky","2020-05-04","yes","yes","no",18
+"Kentucky","2020-05-26","yes","yes","yes",18
+"Kentucky","2020-05-06","yes","yes","no",18
+"Kentucky","2020-06-17","yes","no","yes",18
+"Kentucky","2020-05-05","yes","yes","no",18
+"Louisiana","2020-04-17","yes","yes","no",19
+"Louisiana","2020-05-27","yes","no","yes",19
+"Louisiana","2020-05-28","yes","no","yes",19
+"Louisiana","2020-06-16","yes","no","yes",19
+"Louisiana","2020-05-26","yes","no","yes",19
+"Louisiana","2020-04-20","yes","yes","no",19
+"Louisiana","2020-05-04","yes","yes","yes",19
+"Louisiana","2020-06-17","yes","no","yes",19
+"Louisiana","2020-05-05","yes","yes","yes",19
+"Louisiana","2020-05-06","yes","yes","yes",19
+"Maine","2020-04-17","yes","yes","no",20
+"Maine","2020-05-28","yes","yes","yes",20
+"Maine","2020-05-04","yes","yes","yes",20
+"Maine","2020-05-27","yes","yes","yes",20
+"Maine","2020-06-17","yes","no","yes",20
+"Maine","2020-04-20","yes","yes","no",20
+"Maine","2020-05-06","yes","yes","yes",20
+"Maine","2020-06-16","yes","no","yes",20
+"Maine","2020-05-26","yes","yes","yes",20
+"Maine","2020-05-05","yes","yes","yes",20
+"Maryland","2020-04-17","yes","yes","no",21
+"Maryland","2020-06-17","yes","no","yes",21
+"Maryland","2020-04-20","yes","yes","no",21
+"Maryland","2020-05-28","yes","yes","yes",21
+"Maryland","2020-05-27","yes","yes","yes",21
+"Maryland","2020-05-06","yes","yes","no",21
+"Maryland","2020-05-04","yes","yes","no",21
+"Maryland","2020-06-16","yes","no","yes",21
+"Maryland","2020-05-05","yes","yes","no",21
+"Maryland","2020-05-26","yes","yes","yes",21
+"Massachusetts","2020-05-05","yes","yes","no",22
+"Massachusetts","2020-06-17","yes","yes","yes",22
+"Massachusetts","2020-05-28","yes","yes","yes",22
+"Massachusetts","2020-04-20","yes","yes","no",22
+"Massachusetts","2020-05-04","yes","yes","no",22
+"Massachusetts","2020-05-06","yes","yes","no",22
+"Massachusetts","2020-04-17","yes","yes","no",22
+"Massachusetts","2020-06-16","yes","yes","yes",22
+"Massachusetts","2020-05-26","yes","yes","yes",22
+"Massachusetts","2020-05-27","yes","yes","yes",22
+"Michigan","2020-05-04","yes","yes","no",23
+"Michigan","2020-05-05","yes","yes","no",23
+"Michigan","2020-04-20","yes","yes","no",23
+"Michigan","2020-05-26","yes","yes","yes",23
+"Michigan","2020-05-06","yes","yes","no",23
+"Michigan","2020-06-17","yes","yes","yes",23
+"Michigan","2020-05-27","yes","yes","yes",23
+"Michigan","2020-05-28","yes","yes","yes",23
+"Michigan","2020-06-16","yes","yes","yes",23
+"Michigan","2020-04-17","yes","yes","no",23
+"Minnesota","2020-04-20","yes","yes","no",24
+"Minnesota","2020-05-27","yes","yes","yes",24
+"Minnesota","2020-05-26","yes","yes","yes",24
+"Minnesota","2020-05-04","yes","yes","yes",24
+"Minnesota","2020-05-05","yes","yes","yes",24
+"Minnesota","2020-04-17","yes","yes","no",24
+"Minnesota","2020-05-28","yes","yes","yes",24
+"Minnesota","2020-05-06","yes","yes","yes",24
+"Minnesota","2020-06-17","yes","no","yes",24
+"Minnesota","2020-06-16","yes","no","yes",24
+"Mississippi","2020-04-20","yes","yes","no",25
+"Mississippi","2020-04-17","yes","yes","no",25
+"Mississippi","2020-05-26","yes","no","yes",25
+"Mississippi","2020-05-28","yes","no","yes",25
+"Mississippi","2020-05-05","yes","yes","yes",25
+"Mississippi","2020-05-27","yes","no","yes",25
+"Mississippi","2020-05-04","yes","yes","yes",25
+"Mississippi","2020-05-06","yes","yes","yes",25
+"Mississippi","2020-06-17","yes","no","yes",25
+"Mississippi","2020-06-16","yes","no","yes",25
+"Missouri","2020-04-20","yes","yes","no",26
+"Missouri","2020-04-17","yes","yes","no",26
+"Missouri","2020-05-26","yes","no","yes",26
+"Missouri","2020-05-04","yes","yes","yes",26
+"Missouri","2020-06-17","yes","no","yes",26
+"Missouri","2020-05-27","yes","no","yes",26
+"Missouri","2020-05-28","yes","no","yes",26
+"Missouri","2020-05-06","yes","yes","yes",26
+"Missouri","2020-05-05","yes","yes","yes",26
+"Missouri","2020-06-16","yes","no","yes",26
+"Nebraska","2020-06-17","no","no","yes",28
+"Nebraska","2020-04-20","no","yes","no",28
+"Nebraska","2020-05-04","no","yes","no",28
+"Nebraska","2020-05-05","no","yes","no",28
+"Nebraska","2020-04-17","no","yes","no",28
+"Nebraska","2020-05-26","no","yes","yes",28
+"Nebraska","2020-05-06","no","yes","no",28
+"Nebraska","2020-06-16","no","no","yes",28
+"Nebraska","2020-05-27","no","yes","yes",28
+"Nebraska","2020-05-28","no","yes","yes",28
+"Nevada","2020-05-05","yes","yes","no",29
+"Nevada","2020-05-06","yes","yes","no",29
+"Nevada","2020-04-20","yes","yes","no",29
+"Nevada","2020-06-17","yes","no","yes",29
+"Nevada","2020-05-26","yes","no","yes",29
+"Nevada","2020-05-28","yes","no","yes",29
+"Nevada","2020-06-16","yes","no","yes",29
+"Nevada","2020-05-04","yes","yes","no",29
+"Nevada","2020-04-17","yes","yes","no",29
+"Nevada","2020-05-27","yes","no","yes",29
+"New Hampshire","2020-05-06","yes","yes","no",30
+"New Hampshire","2020-05-27","yes","yes","yes",30
+"New Hampshire","2020-04-20","yes","yes","no",30
+"New Hampshire","2020-05-28","yes","yes","yes",30
+"New Hampshire","2020-05-26","yes","yes","yes",30
+"New Hampshire","2020-05-05","yes","yes","no",30
+"New Hampshire","2020-05-04","yes","yes","no",30
+"New Hampshire","2020-06-16","yes","no","yes",30
+"New Hampshire","2020-04-17","yes","yes","no",30
+"New Hampshire","2020-06-17","yes","no","yes",30
+"New Jersey","2020-05-27","yes","yes","yes",31
+"New Jersey","2020-05-06","yes","yes","no",31
+"New Jersey","2020-04-20","yes","yes","no",31
+"New Jersey","2020-05-26","yes","yes","yes",31
+"New Jersey","2020-06-16","yes","yes","yes",31
+"New Jersey","2020-04-17","yes","yes","no",31
+"New Jersey","2020-05-05","yes","yes","no",31
+"New Jersey","2020-05-28","yes","yes","yes",31
+"New Jersey","2020-05-04","yes","yes","no",31
+"New Jersey","2020-06-17","yes","yes","yes",31
+"New Mexico","2020-05-26","yes","yes","yes",32
+"New Mexico","2020-05-27","yes","yes","yes",32
+"New Mexico","2020-04-17","yes","yes","no",32
+"New Mexico","2020-05-28","yes","yes","yes",32
+"New Mexico","2020-06-16","yes","no","yes",32
+"New Mexico","2020-05-06","yes","yes","no",32
+"New Mexico","2020-04-20","yes","yes","no",32
+"New Mexico","2020-05-04","yes","yes","no",32
+"New Mexico","2020-05-05","yes","yes","no",32
+"New Mexico","2020-06-17","yes","no","yes",32
+"New York","2020-05-27","yes","yes","yes",33
+"New York","2020-04-17","yes","yes","no",33
+"New York","2020-05-26","yes","yes","yes",33
+"New York","2020-05-06","yes","yes","no",33
+"New York","2020-05-28","yes","yes","yes",33
+"New York","2020-05-04","yes","yes","no",33
+"New York","2020-06-16","yes","yes","yes",33
+"New York","2020-04-20","yes","yes","no",33
+"New York","2020-06-17","yes","yes","yes",33
+"New York","2020-05-05","yes","yes","no",33
+"North Carolina","2020-05-27","yes","yes","yes",34
+"North Carolina","2020-05-06","yes","yes","no",34
+"North Carolina","2020-05-28","yes","yes","yes",34
+"North Carolina","2020-05-26","yes","yes","yes",34
+"North Carolina","2020-04-17","yes","yes","no",34
+"North Carolina","2020-06-17","yes","no","yes",34
+"North Carolina","2020-06-16","yes","no","yes",34
+"North Carolina","2020-04-20","yes","yes","no",34
+"North Carolina","2020-05-05","yes","yes","no",34
+"North Carolina","2020-05-04","yes","yes","no",34
+"North Dakota","2020-06-16","no","no","yes",35
+"North Dakota","2020-05-28","no","no","yes",35
+"North Dakota","2020-05-06","no","yes","yes",35
+"North Dakota","2020-05-27","no","no","yes",35
+"North Dakota","2020-04-20","no","yes","no",35
+"North Dakota","2020-05-04","no","yes","yes",35
+"North Dakota","2020-05-26","no","no","yes",35
+"North Dakota","2020-04-17","no","yes","no",35
+"North Dakota","2020-06-17","no","no","yes",35
+"North Dakota","2020-05-05","no","yes","yes",35
+"Ohio","2020-05-26","yes","yes","yes",36
+"Ohio","2020-05-04","yes","yes","yes",36
+"Ohio","2020-06-16","yes","no","yes",36
+"Ohio","2020-05-06","yes","yes","yes",36
+"Ohio","2020-05-05","yes","yes","yes",36
+"Ohio","2020-04-20","yes","yes","no",36
+"Ohio","2020-05-28","yes","yes","yes",36
+"Ohio","2020-04-17","yes","yes","no",36
+"Ohio","2020-05-27","yes","yes","yes",36
+"Ohio","2020-06-17","yes","no","yes",36
+"Oklahoma","2020-06-17","no","no","yes",37
+"Oklahoma","2020-04-20","no","yes","no",37
+"Oklahoma","2020-05-26","no","no","yes",37
+"Oklahoma","2020-05-04","no","yes","yes",37
+"Oklahoma","2020-05-27","no","no","yes",37
+"Oklahoma","2020-05-06","no","yes","yes",37
+"Oklahoma","2020-05-28","no","no","yes",37
+"Oklahoma","2020-06-16","no","no","yes",37
+"Oklahoma","2020-05-05","no","yes","yes",37
+"Oklahoma","2020-04-17","no","yes","no",37
+"Oregon","2020-05-26","yes","yes","yes",38
+"Oregon","2020-05-27","yes","yes","yes",38
+"Oregon","2020-06-17","yes","yes","yes",38
+"Oregon","2020-05-28","yes","yes","yes",38
+"Oregon","2020-05-05","yes","yes","no",38
+"Oregon","2020-04-20","yes","yes","no",38
+"Oregon","2020-05-04","yes","yes","no",38
+"Oregon","2020-05-06","yes","yes","no",38
+"Oregon","2020-04-17","yes","yes","no",38
+"Oregon","2020-06-16","yes","yes","yes",38
+"Pennsylvania","2020-05-28","yes","yes","no",39
+"Pennsylvania","2020-05-26","yes","yes","no",39
+"Pennsylvania","2020-05-04","yes","yes","no",39
+"Pennsylvania","2020-05-27","yes","yes","no",39
+"Pennsylvania","2020-06-17","yes","yes","yes",39
+"Pennsylvania","2020-05-05","yes","yes","no",39
+"Pennsylvania","2020-05-06","yes","yes","no",39
+"Pennsylvania","2020-04-17","yes","yes","no",39
+"Pennsylvania","2020-04-20","yes","yes","no",39
+"Pennsylvania","2020-06-16","yes","yes","yes",39
+"Rhode Island","2020-05-26","yes","yes","yes",41
+"Rhode Island","2020-06-17","yes","no","yes",41
+"Rhode Island","2020-05-27","yes","yes","yes",41
+"Rhode Island","2020-04-17","yes","yes","no",41
+"Rhode Island","2020-05-28","yes","yes","yes",41
+"Rhode Island","2020-05-05","yes","yes","no",41
+"Rhode Island","2020-05-06","yes","yes","no",41
+"Rhode Island","2020-06-16","yes","no","yes",41
+"Rhode Island","2020-05-04","yes","yes","no",41
+"Rhode Island","2020-04-20","yes","yes","no",41
+"South Carolina","2020-05-26","yes","no","yes",42
+"South Carolina","2020-05-27","yes","no","yes",42
+"South Carolina","2020-06-17","yes","no","yes",42
+"South Carolina","2020-05-28","yes","no","yes",42
+"South Carolina","2020-05-05","yes","yes","yes",42
+"South Carolina","2020-05-06","yes","yes","yes",42
+"South Carolina","2020-04-17","yes","yes","no",42
+"South Carolina","2020-04-20","yes","yes","yes",42
+"South Carolina","2020-06-16","yes","no","yes",42
+"South Carolina","2020-05-04","yes","yes","yes",42
+"Tennessee","2020-06-17","yes","no","yes",44
+"Tennessee","2020-05-28","yes","no","yes",44
+"Tennessee","2020-05-27","yes","no","yes",44
+"Tennessee","2020-04-20","yes","yes","no",44
+"Tennessee","2020-05-26","yes","no","yes",44
+"Tennessee","2020-06-16","yes","no","yes",44
+"Tennessee","2020-05-06","yes","yes","yes",44
+"Tennessee","2020-04-17","yes","yes","no",44
+"Tennessee","2020-05-05","yes","yes","yes",44
+"Tennessee","2020-05-04","yes","yes","yes",44
+"Texas","2020-05-28","yes","no","yes",45
+"Texas","2020-05-04","yes","yes","yes",45
+"Texas","2020-05-06","yes","yes","yes",45
+"Texas","2020-04-17","yes","yes","no",45
+"Texas","2020-05-27","yes","no","yes",45
+"Texas","2020-04-20","yes","yes","no",45
+"Texas","2020-06-17","yes","no","yes",45
+"Texas","2020-06-16","yes","no","yes",45
+"Texas","2020-05-05","yes","yes","yes",45
+"Texas","2020-05-26","yes","no","yes",45
+"Utah","2020-05-27","no","no","yes",46
+"Utah","2020-04-17","no","yes","no",46
+"Utah","2020-06-16","no","no","yes",46
+"Utah","2020-05-05","no","yes","yes",46
+"Utah","2020-05-04","no","yes","yes",46
+"Utah","2020-05-06","no","yes","yes",46
+"Utah","2020-06-17","no","no","yes",46
+"Utah","2020-05-26","no","no","yes",46
+"Utah","2020-05-28","no","no","yes",46
+"Utah","2020-04-20","no","yes","no",46
+"Vermont","2020-06-17","yes","no","yes",47
+"Vermont","2020-04-20","yes","yes","no",47
+"Vermont","2020-05-27","yes","yes","yes",47
+"Vermont","2020-06-16","yes","no","yes",47
+"Vermont","2020-05-04","yes","yes","yes",47
+"Vermont","2020-05-06","yes","yes","yes",47
+"Vermont","2020-05-05","yes","yes","yes",47
+"Vermont","2020-04-17","yes","yes","no",47
+"Vermont","2020-05-28","yes","yes","yes",47
+"Vermont","2020-05-26","yes","yes","yes",47
+"Virginia","2020-05-04","yes","yes","no",48
+"Virginia","2020-06-17","yes","no","yes",48
+"Virginia","2020-06-16","yes","no","yes",48
+"Virginia","2020-05-28","yes","yes","no",48
+"Virginia","2020-04-20","yes","yes","no",48
+"Virginia","2020-05-27","yes","yes","no",48
+"Virginia","2020-04-17","yes","yes","no",48
+"Virginia","2020-05-06","yes","yes","no",48
+"Virginia","2020-05-05","yes","yes","no",48
+"Virginia","2020-05-26","yes","yes","no",48
+"Washington","2020-06-16","yes","yes","yes",49
+"Washington","2020-04-17","yes","yes","no",49
+"Washington","2020-05-04","yes","yes","no",49
+"Washington","2020-06-17","yes","yes","yes",49
+"Washington","2020-05-27","yes","yes","yes",49
+"Washington","2020-05-26","yes","yes","yes",49
+"Washington","2020-05-28","yes","yes","yes",49
+"Washington","2020-04-20","yes","yes","no",49
+"Washington","2020-05-05","yes","yes","yes",49
+"Washington","2020-05-06","yes","yes","yes",49
+"West Virginia","2020-05-27","yes","no","yes",50
+"West Virginia","2020-06-16","yes","no","yes",50
+"West Virginia","2020-04-20","yes","yes","no",50
+"West Virginia","2020-06-17","yes","no","yes",50
+"West Virginia","2020-04-17","yes","yes","no",50
+"West Virginia","2020-05-04","yes","yes","yes",50
+"West Virginia","2020-05-06","yes","yes","yes",50
+"West Virginia","2020-05-05","yes","yes","yes",50
+"West Virginia","2020-05-26","yes","no","yes",50
+"West Virginia","2020-05-28","yes","no","yes",50
+"Wisconsin","2020-05-04","yes","yes","no",51
+"Wisconsin","2020-05-27","yes","yes","yes",51
+"Wisconsin","2020-05-05","yes","yes","no",51
+"Wisconsin","2020-04-17","yes","yes","no",51
+"Wisconsin","2020-04-20","yes","yes","no",51
+"Wisconsin","2020-05-06","yes","yes","no",51
+"Wisconsin","2020-06-16","yes","no","yes",51
+"Wisconsin","2020-05-26","yes","yes","yes",51
+"Wisconsin","2020-05-28","yes","no","yes",51
+"Wisconsin","2020-06-17","yes","no","yes",51

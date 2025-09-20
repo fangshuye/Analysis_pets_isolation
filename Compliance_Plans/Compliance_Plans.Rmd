@@ -1,0 +1,95 @@
+---
+title: "Compliance and Plans (Monday)"
+author: "Fangshu Ye"
+date: "5/25/2020"
+output: html_document
+---
+
+## Common questions for wave1 and wave2
+
+
+Our interested outcomes are listed below:
+
+- **Compliance** (Yes:1;No:0) : Does your pet/companion animal(s) influence your compliance with quarantine recommendations and requirements in your region?
+
+- **Plans** (Yes:1;No:0): Since the COVID-19 outbreak, have you made plans for caring for your pet/companion animal(s) should you become sick and unable to care for them?
+
+```{r load data,warning=FALSE,message=FALSE,comment=F,include=FALSE}
+library(dplyr)
+library(ggplot2)
+library(lme4)
+library(knitr)
+library(kableExtra)
+alldata <- read.csv('sample_data.csv',header = T)
+cols <- colnames(alldata)
+alldata[cols] <- lapply(alldata[cols], factor) 
+levels(alldata$MostAttach) <- c("Dog","Cat")
+```
+
+#### Compliance
+```{r Compliance plot, echo=FALSE}
+sumdata1 <- alldata %>%
+  group_by(time,MostAttach) %>%
+  summarise(count = n())
+
+sumdata2 <- alldata %>%
+  group_by(time,MostAttach,Compliance) %>%
+  summarise(percent = n())
+
+sumdata2 <- merge(sumdata2,sumdata1,by=c("time","MostAttach"))
+sumdata2$percent <- sumdata2$percent/sumdata2$count
+
+ggplot(sumdata2, aes(x=MostAttach,y=percent,fill=Compliance))+geom_col(width = 0.5)+facet_grid(time~.)+
+  geom_text(aes(label = scales::percent(percent)),position = position_stack(vjust = .5))
+```
+
+```{r Compliance model, echo=FALSE}
+m1 <- glm(Compliance ~ MostAttach, data = alldata[alldata$time=="T1",], family = "binomial")
+m2 <- glm(Compliance ~ MostAttach, data = alldata[alldata$time=="T2",], family = "binomial")
+m3 <- glmer(Compliance ~ MostAttach + time + (1|workerId), data = alldata, family = "binomial")
+m4 <- glmer(Compliance ~ MostAttach + time + MostAttach*time + (1|workerId), data = alldata, family = "binomial")
+coef <- rbind(summary(m1)$coef[-1,],summary(m2)$coef[-1,],summary(m3)$coef[-1,],summary(m4)$coef[-1,])
+row.names(coef)[1:2] <- c("MostAttachCat","MostAttachCat")
+coef %>%
+  kable() %>%
+  kable_styling()%>%
+  pack_rows("T1: Compliance ~ MostAttach", 1, 1) %>%
+  pack_rows("T2: Compliance ~ MostAttach", 2, 2) %>%
+  pack_rows("T1+T2: Compliance ~ MostAttach + time + (1|workerId)", 3, 4) %>%
+  pack_rows("T1+T2: Compliance ~ MostAttach + time + MostAttach*time + (1|workerId)", 5, 7)
+```
+
+#### Plans
+```{r Plans plot, echo=FALSE}
+sumdata1 <- alldata %>%
+  group_by(time,MostAttach) %>%
+  summarise(count = n())
+
+sumdata2 <- alldata %>%
+  group_by(time,MostAttach,Plans) %>%
+  summarise(percent = n())
+
+sumdata2 <- merge(sumdata2,sumdata1,by=c("time","MostAttach"))
+sumdata2$percent <- sumdata2$percent/sumdata2$count
+
+ggplot(sumdata2, aes(x=MostAttach,y=percent,fill=Plans))+geom_col(width = 0.5)+facet_grid(time~.)+
+  geom_text(aes(label = scales::percent(percent)),position = position_stack(vjust = .5))
+```
+
+```{r Plans model, echo=FALSE}
+m1 <- glm(Plans ~ MostAttach, data = alldata[alldata$time=="T1",], family = "binomial")
+m2 <- glm(Plans ~ MostAttach, data = alldata[alldata$time=="T2",], family = "binomial")
+m3 <- glmer(Plans ~ MostAttach + time + (1|workerId), data = alldata, family = "binomial")
+m4 <- glmer(Plans ~ MostAttach + time + MostAttach*time + (1|workerId), data = alldata, family = "binomial")
+coef <- rbind(summary(m1)$coef[-1,],summary(m2)$coef[-1,],summary(m3)$coef[-1,],summary(m4)$coef[-1,])
+row.names(coef)[1:2] <- c("MostAttachCat","MostAttachCat")
+coef %>%
+  kable() %>%
+  kable_styling()%>%
+  pack_rows("T1: Plans ~ MostAttach", 1, 1) %>%
+  pack_rows("T2: Plans ~ MostAttach", 2, 2) %>%
+  pack_rows("T1+T2: Plans ~ MostAttach + time + (1|workerId)", 3, 4) %>%
+  pack_rows("T1+T2: Plans ~ MostAttach + time + MostAttach*time + (1|workerId)", 5, 7)
+```
+
+

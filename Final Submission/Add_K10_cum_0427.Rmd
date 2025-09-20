@@ -1,0 +1,624 @@
+---
+title: "Confidence Interval for all models in Pet-Covid Analysis"
+author: "Fangshu Ye"
+date: "04/27/2023"
+output:
+  html_document:
+   toc: true
+   toc_float: true
+   collapsed: false
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = FALSE,message=FALSE,warning=FALSE,comment = NA)
+```
+
+
+# Pet owners versus no-pet owners
+
+
+**PetOwner** (1:Yes; 0:No) : Do you currently have or share responsibility for a pet/companion animal?
+
+
+```{r package}
+library(dplyr)
+library(ggplot2)
+library(lme4)
+library(lmerTest)
+library(knitr)
+library(kableExtra)
+library(ordinal)
+library(formattable)
+library(gridExtra)
+library(gsheet)
+library(reshape)
+```
+
+
+```{r data prep pet owners}
+setwd('/Users/fangshu/Desktop/research/Analysis_pets_isolation/COVIDandPETS-master/cleaned_data/')
+rm(list = ls())
+policy <- read.csv("cleaned_SIP.csv",header = T)
+policy$date <- as.Date(policy$date)
+policy <- policy[order(policy$statename,policy$date),]
+policy <- policy[,-1]
+
+rawdatalist <- list()
+alldata <- c()
+for (d in 1:4) {
+  if(d %in% c(1,2)){
+    rawdatalist[[d]] <- read.csv(paste0("wave",d,"_cleaned_0805.csv")) 
+  }else{
+    rawdatalist[[d]] <- read.csv(paste0("wave",d,"_cleaned_20210615.csv")) 
+  }
+
+  wave <- data.frame(dplyr::select(rawdatalist[[d]],workerId,PetOwner,
+                           Kessler1,Kessler2,Kessler3,Kessler4,Kessler5,
+                           Kessler6,Kessler7,Kessler8,Kessler9,Kessler10,
+                           Gad1,Gad2,Gad3,Gad4,Gad5,Gad6,Gad7,
+                           Lonely1,Lonely2,Lonely3,
+                           Risk1,Risk2,Risk3,
+                           genhealth,RecordedDate,state))
+  
+  wave$Wave <- rep(d,nrow(wave))
+  alldata <- rbind(alldata,wave)
+}
+unlist_date <- unlist(strsplit(alldata$RecordedDate, " "))
+position <- seq(1,nrow(alldata)*2,2)
+alldata$date <- unlist_date[position]
+alldata$date <- as.Date(alldata$date,format="%m/%d/%y")
+alldata <- merge(alldata,policy,by=c("state","date"))
+
+alldata <- alldata %>%
+  mutate(Kessler_Sum=Kessler1+Kessler2+Kessler3+Kessler4+Kessler5+Kessler6+Kessler7+Kessler8+Kessler9+Kessler10) %>%
+  mutate(GAD_Sum=Gad1+Gad2+Gad3+Gad4+Gad5+Gad6+Gad7) %>%
+  mutate(Loneliness=Lonely1+Lonely2+Lonely3) %>%
+  mutate(Risk=Risk1+Risk2+Risk3) %>%
+  mutate(RecordedDate=NULL)
+
+cols <- colnames(alldata)[3:30]
+alldata[cols] <- lapply(alldata[cols], factor) 
+levels(alldata$PetOwner) <- c("No","Yes")
+
+alldata <- alldata %>%
+  mutate(Kessler=ifelse(Kessler_Sum<20,1,
+                        ifelse(Kessler_Sum>=20 & Kessler_Sum<=24,2,
+                               ifelse(Kessler_Sum>=30,4,3)))) %>%
+  mutate(Kessler=as.factor(Kessler))
+
+# select the columns we need
+alldata <- data.frame(dplyr::select(alldata,
+                                    workerId,
+                                    PetOwner,if_shelter,Wave,
+                                    genhealth,Kessler,Kessler_Sum,GAD_Sum,Loneliness,Risk
+                                    ))
+```
+
+
+## genhealth
+
+```{r genhealth model}
+m8 <- clmm(genhealth ~ PetOwner + Wave + if_shelter + PetOwner*if_shelter + (1|workerId), data = alldata, nAGQ = 9)
+
+coef <- summary(m8)$coef[-c(1:4),]
+
+colnames(coef)[4] <- "pvalue"
+
+colns <- colnames(coef)
+rowns <- rownames(coef)
+coef <- coef %>%
+  round(3) %>%
+  as.data.frame() %>%
+  mutate(Model=rowns) %>%
+  select(Model,colns[-3])
+
+coef %>%
+  mutate(pvalue = cell_spec(pvalue, "html", color = ifelse(pvalue < 0.05, "red", "black"))) %>%
+  kable(escape = F, booktabs = T, linesep = "",
+        caption = paste0("Table1: Ordinal Logistic Regression: ",paste(deparse(formula(m8), width.cutoff = 500), collapse="")))%>%
+  kable_styling()
+```
+
+```{r function for model}
+createCI <- function(model, Main_effect, interaction_effect){
+  # eg: main_effect: 'PetOwnerYes'
+  # eg: interaction_effect: 'PetOwnerYes:if_shelteryes'
+  coef_main <- coefficients(model)[Main_effect]
+  coef_inter <- coefficients(model)[interaction_effect]
+  
+  vcov_m <- vcov(model)
+  var_main <- vcov_m[Main_effect, Main_effect]
+  var_inter <- vcov_m[interaction_effect, interaction_effect]
+  cov_main_inter <- vcov_m[interaction_effect, Main_effect]
+  var_main_inert <- var_main + var_inter + 2*cov_main_inter
+  
+  coef_vector_without <- c(coef_main,
+                           coef_main - 1.96*sqrt(var_main),
+                           coef_main + 1.96*sqrt(var_main))
+  
+  coef_vector_with <- c(coef_main + coef_inter,
+                        coef_main + coef_inter - 1.96*sqrt(var_main_inert),
+                        coef_main + coef_inter + 1.96*sqrt(var_main_inert))
+  
+  res_tb <- rbind(exp(coef_vector_without),
+                 exp(coef_vector_with))
+    
+  res_tb <- as.data.frame(res_tb)
+  colnames(res_tb) <- c('point estimate','95% lower CI', '95% upper CI')          
+  return(res_tb)
+  
+}
+```
+
+
+The estimated odd ratio (point estimate and confidence interval) in the Table2 means the odd ratio of the event 'Y>=j', where j means jth category. Take the first row for example, the odds ratio of the event 'Y>=j' is 0.529 (calculated by exp(-0.637)), thus the odd ratio of answering with category j or above **when people have a pet relative to people who didn’t have is 0.529 under the condition of 'if_shelter = no'**. Take the second row for example, the odds ratio of the event 'Y>=j' is 0.774 (calculated by exp(-0.637 + 0.381)), thus **the odd ratio of answering with category j or above when people have a pet relative to people who didn’t have is 0.774 under the condition of 'if_shelter = yes'**. The 2nd and 3st column represents for the lower and upper level of the 95% confidence interval of the estimate in 1st column.
+
+Note: odds ratio should compare with 1 (we compare the regression coefficient with 0 so that we compare exp(regression coefficient) with 1), if the 95% confidence interval of the odds ratio include 1, then it means the effect corresponding with the odds ratio isn't significant at the significant level of 0.05. Hence, we can see, **in the genhealth model, the effect of Petowner is not significant whenever the shelter-in-place order exists or not.**
+
+Other ordinal logistic models can be interpreted similarly. The only difference in interpretation is the term 'category j'. In genhealth, $j$ can take any values in *not so good, so so, good, excellent*. In other cases, for example, $j$ can take any values in *likely to have a mild mental disorder, likely to have moderate mental disorder, likely to have a severe mental disorder* in K-10 model.
+
+
+```{r genhealth model summary}
+summary_info <- createCI(m8,'PetOwnerYes','PetOwnerYes:if_shelteryes')
+rownames(summary_info) <- c('when the if_shelter is no', 'when the if_shelter is yes')
+summary_info %>%
+  round(3) %>%
+  kable(escape = F, booktabs = T, linesep = "",
+        caption = 'Table2: genhealth: the estimate of odds ratio and its 95% confidence interval')%>%
+  kable_styling()
+```
+
+
+## K10
+
+
+```{r K10 model}
+m8 <- clmm(Kessler ~ PetOwner + Wave + if_shelter + PetOwner*if_shelter + (1|workerId), data = alldata, nAGQ = 10)
+
+coef <- summary(m8)$coef[-c(1:3),]
+
+colnames(coef)[4] <- "pvalue"
+
+colns <- colnames(coef)
+rowns <- rownames(coef)
+coef <- coef %>%
+  round(3) %>%
+  as.data.frame() %>%
+  mutate(Model=rowns) %>%
+  select(Model,colns[-3])
+
+coef %>%
+  mutate(pvalue = cell_spec(pvalue, "html", color = ifelse(pvalue < 0.05, "red", "black"))) %>%
+  kable(escape = F, booktabs = T, linesep = "",
+        caption = paste0("Ordinal Logistic Regression: ",paste(deparse(formula(m8), width.cutoff = 500), collapse="")))%>%
+  kable_styling()
+```
+
+```{r K10 model summary}
+summary_info <- createCI(m8,'PetOwnerYes','PetOwnerYes:if_shelteryes')
+rownames(summary_info) <- c('when the if_shelter is no', 'when the if_shelter is yes')
+summary_info %>%
+  round(3) %>%
+  kable(escape = F, booktabs = T, linesep = "",
+        caption = 'K10: The estimate of odds ratio and its 95% confidence interval')%>%
+  kable_styling()
+```
+
+
+If we didn't group K10 and treat it as a continuous variable, here is the result of linear mixed effect model.
+
+```{r K10 model cumu sum}
+m8 <- lmer(Kessler_Sum ~ PetOwner + Wave + if_shelter + PetOwner*if_shelter + (1|workerId), data = alldata)
+
+coef <- summary(m8)$coef[-1,-3]
+
+colnames(coef)[4] <- "pvalue"
+
+colns <- colnames(coef)
+rowns <- rownames(coef)
+coef <- coef %>%
+  round(3) %>%
+  as.data.frame() %>%
+  mutate(Model=rowns) %>%
+  select(Model,colns[-3])
+
+coef %>%
+  mutate(pvalue = cell_spec(pvalue, "html", color = ifelse(pvalue < 0.05, "red", "black"))) %>%
+  kable(escape = F, booktabs = T, linesep = "",
+        caption = paste0("Linear mixed-effect model: ",paste(deparse(formula(m8), width.cutoff = 500), collapse="")))%>%
+  kable_styling()
+```
+
+Interpretation: The effect of 'PetOwner' is not significant from the output above.
+
+```{r function for linear model}
+createCI_linear <- function(model, Main_effect, interaction_effect){
+  # eg: main_effect: 'PetOwnerYes'
+  # eg: interaction_effect: 'PetOwnerYes:if_shelteryes'
+  summary_info <- summary(model)
+  coef_all <- summary_info$coef 
+  coef_main <- coef_all[Main_effect,'Estimate']
+  coef_inter <-coef_all[interaction_effect,'Estimate']
+  
+  vcov_m <- vcov(model)
+  var_main <- vcov_m[Main_effect, Main_effect]
+  var_inter <- vcov_m[interaction_effect, interaction_effect]
+  cov_main_inter <- vcov_m[interaction_effect, Main_effect]
+  var_main_inert <- var_main + var_inter + 2*cov_main_inter
+  
+  coef_vector_without <- c(coef_main,
+                           coef_main - 1.96*sqrt(var_main),
+                           coef_main + 1.96*sqrt(var_main))
+  
+  coef_vector_with <- c(coef_main + coef_inter,
+                        coef_main + coef_inter - 1.96*sqrt(var_main_inert),
+                        coef_main + coef_inter + 1.96*sqrt(var_main_inert))
+  
+  res_tb <- rbind(coef_vector_without,
+                  coef_vector_with)
+    
+  res_tb <- as.data.frame(res_tb)
+  colnames(res_tb) <- c('point estimate','95% lower CI', '95% upper CI')          
+  return(res_tb)
+  
+}
+```
+
+```{r K10 model summary cumu sum}
+summary_info <- createCI_linear(m8,'PetOwnerYes','PetOwnerYes:if_shelteryes')
+rownames(summary_info) <- c('when the if_shelter is no', 'when the if_shelter is yes')
+summary_info %>%
+  round(3) %>%
+  kable(escape = F, booktabs = T, linesep = "",
+        caption = 'K-10: The estimate of PetOwner effect and its 95% confidence interval')%>%
+  kable_styling()
+```
+
+
+
+## GAD-7
+
+
+```{r GAD score model}
+m8 <- lmer(GAD_Sum ~ PetOwner + Wave + if_shelter + PetOwner*if_shelter + (1|workerId), data = alldata)
+
+coef <- summary(m8)$coef[-1,-3]
+
+colnames(coef)[4] <- "pvalue"
+
+colns <- colnames(coef)
+rowns <- rownames(coef)
+coef <- coef %>%
+  round(3) %>%
+  as.data.frame() %>%
+  mutate(Model=rowns) %>%
+  select(Model,colns[-3])
+
+coef %>%
+  mutate(pvalue = cell_spec(pvalue, "html", color = ifelse(pvalue < 0.05, "red", "black"))) %>%
+  kable(escape = F, booktabs = T, linesep = "",
+        caption = paste0("Linear mixed-effect model: ",paste(deparse(formula(m8), width.cutoff = 500), collapse="")))%>%
+  kable_styling()
+```
+
+From the table below, when the if_shelter is no, the estimate of PetOwner effect is 0.037, the 95% CI is (-1.009, 1.083). When the if_shelter is yes, the estimate of PetOwner effect is 0.156, the 95% CI is (-0.783,1.094). Obviously, the effect of PetOwner isn't significant whenever the condition of if_shelter since the 95% CI contains 0. It's also very obvious from the table above, the p-values of PetOwnerYes and PetOwnerYes:if_shelteryes are vey high.
+
+```{r GAD-7 model summary}
+summary_info <- createCI_linear(m8,'PetOwnerYes','PetOwnerYes:if_shelteryes')
+rownames(summary_info) <- c('when the if_shelter is no', 'when the if_shelter is yes')
+summary_info %>%
+  round(3) %>%
+  kable(escape = F, booktabs = T, linesep = "",
+        caption = 'GAD-7: The estimate of PetOwner effect and its 95% confidence interval')%>%
+  kable_styling()
+```
+
+
+## Loneliness-3
+
+
+```{r Loneliness-3 model}
+m8 <- lmer(Loneliness ~ PetOwner + Wave + if_shelter + PetOwner*if_shelter + (1|workerId), data = alldata)
+
+coef <- summary(m8)$coef[-1,-3]
+
+colnames(coef)[4] <- "pvalue"
+
+colns <- colnames(coef)
+rowns <- rownames(coef)
+coef <- coef %>%
+  round(3) %>%
+  as.data.frame() %>%
+  mutate(Model=rowns) %>%
+  select(Model,colns[-3])
+
+coef %>%
+  mutate(pvalue = cell_spec(pvalue, "html", color = ifelse(pvalue < 0.05, "red", "black"))) %>%
+  kable(escape = F, booktabs = T, linesep = "",
+        caption = paste0("Linear mixed-effect model: ",paste(deparse(formula(m8), width.cutoff = 500), collapse="")))%>%
+  kable_styling()
+```
+
+```{r Loneliness-3 summary}
+summary_info <- createCI_linear(m8,'PetOwnerYes','PetOwnerYes:if_shelteryes')
+rownames(summary_info) <- c('when the if_shelter is no', 'when the if_shelter is yes')
+summary_info %>%
+  round(3) %>%
+  kable(escape = F, booktabs = T, linesep = "",
+        caption = 'Loneliness-3: The estimate of PetOwner effect and its 95% confidence interval')%>%
+  kable_styling()
+```
+
+Take the first row for example, when the if_shelter is 'no', the Loneliness score of those who have pets ((PetOwner = Yes) are 0.663 (0.136, 1.191) **lower** than those who don't have pets (PetOwner = No). 
+
+## Risk-3
+
+```{r Risk-3 model}
+m8 <- lmer(Risk ~ PetOwner + Wave + if_shelter + PetOwner*if_shelter + (1|workerId), data = alldata)
+
+coef <- summary(m8)$coef[-1,-3]
+
+colnames(coef)[4] <- "pvalue"
+
+colns <- colnames(coef)
+rowns <- rownames(coef)
+coef <- coef %>%
+  round(3) %>%
+  as.data.frame() %>%
+  mutate(Model=rowns) %>%
+  select(Model,colns[-3])
+
+coef %>%
+  mutate(pvalue = cell_spec(pvalue, "html", color = ifelse(pvalue < 0.05, "red", "black"))) %>%
+  kable(escape = F, booktabs = T, linesep = "",
+        caption = paste0("Linear mixed-effect model: ",paste(deparse(formula(m8), width.cutoff = 500), collapse="")))%>%
+  kable_styling()
+```
+
+```{r Risk-3 summary}
+summary_info <- createCI_linear(m8,'PetOwnerYes','PetOwnerYes:if_shelteryes')
+rownames(summary_info) <- c('when the if_shelter is no', 'when the if_shelter is yes')
+summary_info %>%
+  round(3) %>%
+  kable(escape = F, booktabs = T, linesep = "",
+        caption = 'Risk-3: The estimate of PetOwner effect and its 95% confidence interval')%>%
+  kable_styling()
+```
+
+# Cat owners versus dogs owners
+
+```{r input data}
+setwd('/Users/fangshu/Desktop/research/Analysis_pets_isolation/COVIDandPETS-master/cleaned_data/')
+library(dplyr)
+library(ggplot2)
+library(lme4)
+library(knitr)
+library(kableExtra)
+library(ordinal)
+library(formattable)
+
+policy <- read.csv("cleaned_SIP.csv",header = T)
+policy$date <- as.Date(policy$date)
+policy <- policy[,-1]
+
+rawdatalist <- list()
+alldata <- c()
+for (d in 1:4) {
+  
+  if(d %in% c(1,2)){
+    rawdatalist[[d]] <- read.csv(paste0("wave",d,"_cleaned_0805.csv")) 
+  }else{
+    rawdatalist[[d]] <- read.csv(paste0("wave",d,"_cleaned_20210615.csv")) 
+  }
+  
+  rawdatalist[[d]] <- rawdatalist[[d]] %>%
+    filter(PetOwner==1) %>%
+    filter(MostAttach %in% c(1,2))
+  
+  
+  wave <- data.frame(dplyr::select(rawdatalist[[d]],workerId,MostAttach,
+                           Compliance,Interact,Concern,
+                           CCAS1,CCAS2,CCAS3,CCAS4,CCAS5,CCAS6,CCAS7,
+                           CCAS8,CCAS9,CCAS10,CCAS11,CCAS12,CCAS13,
+                           RecordedDate,state))
+  wave$Wave <- rep(d,nrow(wave))
+  alldata <- rbind(alldata,wave)
+}
+
+unlist_date <- unlist(strsplit(alldata$RecordedDate, " "))
+position <- seq(1,nrow(alldata)*2,2)
+alldata$date <- unlist_date[position]
+alldata$date <- as.Date(alldata$date,format="%m/%d/%y")
+alldata <- merge(alldata,policy,by=c("state","date"))
+
+alldata <- alldata %>%
+  mutate(RecordedDate=NULL) %>%
+  mutate(CCAS=CCAS1+CCAS2+CCAS3+CCAS4+CCAS5+CCAS6+CCAS7+CCAS8+CCAS9+CCAS10+CCAS11+CCAS12+CCAS13)
+cols <- colnames(alldata)[3:22]
+alldata[cols] <- lapply(alldata[cols], factor) 
+levels(alldata$MostAttach) <- c("Dog","Cat")
+levels(alldata$Interact) <- c("No","Yes")
+levels(alldata$Compliance) <- c("No","Yes")
+
+# select the columns we need
+alldata <- data.frame(dplyr::select(alldata,
+                                    workerId,
+                                    MostAttach,if_shelter,Wave,
+                                    Compliance,Interact,Concern,CCAS
+                                    ))
+```
+
+
+## Compliance
+
+```{r Compliance model}
+m8 <- glmer(Compliance ~ MostAttach + Wave + if_shelter + MostAttach*if_shelter + (1|workerId), data = alldata, family = "binomial",nAGQ = 9)
+coef <- summary(m8)$coef[-1,]
+
+colnames(coef)[4] <- "pvalue"
+
+colns <- colnames(coef)
+rowns <- rownames(coef)
+coef <- coef %>%
+  round(3) %>%
+  as.data.frame() %>%
+  mutate(Model=rowns) %>%
+  select(Model,colns[-3])
+
+coef %>%
+  mutate(pvalue = cell_spec(pvalue,"html", color = ifelse(pvalue < 0.05, "red", "black"))) %>%
+  kable(escape = F, booktabs = T, linesep = "",
+        caption = paste0("Logistic Regression: ",paste(deparse(formula(m8), width.cutoff = 500), collapse="")))%>%
+  kable_styling( )
+```
+
+```{r function for binary model}
+createCI_binary <- function(model, Main_effect, interaction_effect){
+  # eg: main_effect: 'PetOwnerYes'
+  # eg: interaction_effect: 'PetOwnerYes:if_shelteryes'
+  summary_info <- summary(model)
+  coef_all <- summary_info$coef 
+  coef_main <- coef_all[Main_effect,'Estimate']
+  coef_inter <-coef_all[interaction_effect,'Estimate']
+  
+  vcov_m <- vcov(model)
+  var_main <- vcov_m[Main_effect, Main_effect]
+  var_inter <- vcov_m[interaction_effect, interaction_effect]
+  cov_main_inter <- vcov_m[interaction_effect, Main_effect]
+  var_main_inert <- var_main + var_inter + 2*cov_main_inter
+  
+  coef_vector_without <- c(coef_main,
+                           coef_main - 1.96*sqrt(var_main),
+                           coef_main + 1.96*sqrt(var_main))
+  
+  coef_vector_with <- c(coef_main + coef_inter,
+                        coef_main + coef_inter - 1.96*sqrt(var_main_inert),
+                        coef_main + coef_inter + 1.96*sqrt(var_main_inert))
+  
+  res_tb <- rbind(exp(coef_vector_without),
+                  exp(coef_vector_with))
+    
+  res_tb <- as.data.frame(res_tb)
+  colnames(res_tb) <- c('point estimate','95% lower CI', '95% upper CI')          
+  return(res_tb)
+  
+}
+```
+
+This is a logistic regression. When the if_shelter is no, the estimated odds ratio is 0.127, which means that the odds ratio of answering with 'Yes' to the question related with Compliance when people is cat-owner relative to people is dog-owner is 0.127. That is, dog-owner are more likely to answer 'Yes' to our question related to Compliance. The 95% confidence interval is (0.032, 0.510). When the if_shelter is yes, the estimated odds ratio is 0.090, which means that the odds ratio of answering with 'Yes' to the question related with Compliance when people is cat-owner relative to people is dog-owner is 0.090. The 95% confidence interval is (0.029, 0.275). Both intervals didn't include 1 so they're significant. This is also true if we look at the p-value of the MostAttachCat in table above. While the point estimate and the 95% CI are different between two shelter-in-place condition, the difference between them is not significant since our interaction term isn't significant in the table above.
+
+
+```{r Compliance summary}
+summary_info <- createCI_binary(m8,'MostAttachCat','MostAttachCat:if_shelteryes')
+rownames(summary_info) <- c('when the if_shelter is no', 'when the if_shelter is yes')
+summary_info %>%
+  round(3) %>%
+  kable(escape = F, booktabs = T, linesep = "",
+        caption = 'Compliance: The estimate of odds ratio and its 95% confidence interval')%>%
+  kable_styling()
+```
+
+## Interact
+
+
+```{r Interact model}
+m8 <- glmer(Interact ~ MostAttach + Wave + if_shelter + MostAttach*if_shelter + (1|workerId), data = alldata, family = "binomial",nAGQ = 9)
+coef <- summary(m8)$coef[-1,]
+
+colnames(coef)[4] <- "pvalue"
+
+colns <- colnames(coef)
+rowns <- rownames(coef)
+coef <- coef %>%
+  round(3) %>%
+  as.data.frame() %>%
+  mutate(Model=rowns) %>%
+  select(Model,colns[-3])
+
+coef %>%
+  mutate(pvalue = cell_spec(pvalue,"html", color = ifelse(pvalue < 0.05, "red", "black"))) %>%
+  kable(escape = F, booktabs = T, linesep = "",
+        caption = paste0("Logistic Regression: ",paste(deparse(formula(m8), width.cutoff = 500), collapse="")))%>%
+  kable_styling( )
+```
+
+
+```{r Interact summary}
+summary_info <- createCI_binary(m8,'MostAttachCat','MostAttachCat:if_shelteryes')
+rownames(summary_info) <- c('when the if_shelter is no', 'when the if_shelter is yes')
+summary_info %>%
+  round(3) %>%
+  kable(escape = F, booktabs = T, linesep = "",
+        caption = 'Interact: The estimate of odds ratio and its 95% confidence interval')%>%
+  kable_styling()
+```
+
+## Concern
+
+
+```{r Concern model}
+m8 <- clmm(Concern ~ MostAttach + Wave + if_shelter + MostAttach*if_shelter + (1|workerId), data = alldata, nAGQ = 9)
+
+coef <- summary(m8)$coef[-c(1:4),]
+
+colnames(coef)[4] <- "pvalue"
+
+colns <- colnames(coef)
+rowns <- rownames(coef)
+coef <- coef %>%
+  round(3) %>%
+  as.data.frame() %>%
+  mutate(Model=rowns) %>%
+  select(Model,colns[-3])
+
+coef %>%
+  mutate(pvalue = cell_spec(pvalue,"html", color = ifelse(pvalue < 0.05, "red", "black"))) %>%
+  kable(escape = F, booktabs = T, linesep = "",
+        caption = paste0("Ordinal Logistic Regression: ",paste(deparse(formula(m8), width.cutoff = 500), collapse="")))%>%
+  kable_styling( )
+```
+
+```{r Concern summary}
+summary_info <- createCI(m8,'MostAttachCat','MostAttachCat:if_shelteryes')
+rownames(summary_info) <- c('when the if_shelter is no', 'when the if_shelter is yes')
+summary_info %>%
+  round(3) %>%
+  kable(escape = F, booktabs = T, linesep = "",
+        caption = 'Concern: The estimate of odds ratio and its 95% confidence interval')%>%
+  kable_styling()
+```
+
+## CCAS scores
+
+
+```{r ccas score model}
+m8 <- lmer(CCAS ~ MostAttach + Wave + if_shelter + MostAttach*if_shelter + (1|workerId), data = alldata)
+
+coef <- summary(m8)$coef[-1,-3]
+
+colnames(coef)[4] <- "pvalue"
+
+colns <- colnames(coef)
+rowns <- rownames(coef)
+coef <- coef %>%
+  round(3) %>%
+  as.data.frame() %>%
+  mutate(Model=rowns) %>%
+  select(Model,colns[-3])
+
+coef %>%
+  mutate(pvalue = cell_spec(pvalue, "html", color = ifelse(pvalue < 0.05, "red", "black"))) %>%
+  kable(escape = F, booktabs = T, linesep = "",
+        caption = paste0("Linear mixed-effect model: ",paste(deparse(formula(m8), width.cutoff = 500), collapse="")))%>%
+  kable_styling()
+```
+
+```{r ccas score summary}
+summary_info <- createCI_linear(m8,'MostAttachCat','MostAttachCat:if_shelteryes')
+rownames(summary_info) <- c('when the if_shelter is no', 'when the if_shelter is yes')
+summary_info %>%
+  round(3) %>%
+  kable(escape = F, booktabs = T, linesep = "",
+        caption = 'CCAS Score: The estimate of MostAttach effect and its 95% confidence interval')%>%
+  kable_styling()
+```
